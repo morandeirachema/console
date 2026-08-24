@@ -1,0 +1,10 @@
+# markdownlint-cli2 — LazyVim's markdown extra runs this via nvim-lint, so these
+# settings are what you see as diagnostics in the editor. CI does not lint markdown.
+config:
+  # MD013 defaults to 80, which every table and release URL in this repo exceeds.
+  # Prose here wraps around 95 (ROADMAP/SECURITY); tables and fenced code can't
+  # wrap at all, so the limit applies to prose only.
+  MD013:
+    line_length: 120
+    tables: false
+    code_blocks: false
