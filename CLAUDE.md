@@ -30,6 +30,7 @@ non-interactive session. Use the `tomllib` check above, or `starship print-confi
 ## How it fits together (the important part)
 
 **Symlink model.** `install.sh` symlinks repo files into `$HOME`, it does not copy them:
+
 - `zsh/.zshrc` → `~/.zshrc`
 - `starship/starship.toml` → `~/.config/starship.toml`
 
@@ -45,6 +46,7 @@ this, **`aliases.zsh` must stay in `zsh/` next to `.zshrc`** — moving it break
 `~/.local/share/zinit` on first launch, then plugins load *after* the first prompt via
 `zinit wait lucid` — startup is instant, but autosuggestions/highlighting activate a few ms
 in. Consequences that must be preserved when editing the plugin block:
+
 - `compinit` runs **once**, inside the first turbo wave's `atinit` (`zicompinit; zicdreplay`).
   Do **not** add a synchronous `compinit`/`zinit cdreplay` too, or it runs twice.
 - A keybinding for an async plugin (e.g. history-substring-search's Up/Down/Ctrl-P/N) must be

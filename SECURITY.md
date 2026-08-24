@@ -5,6 +5,7 @@ personal dotfiles repo, not a security product — but it tries not to make you
 less safe. See [`ROADMAP.md`](ROADMAP.md) for what's still planned.
 
 ## Secrets & shell history
+
 - **Keep secrets out of history:** commands typed with a **leading space** are
   never written to `~/.zsh_history` (`HIST_IGNORE_SPACE`). Prefix any command
   that contains a token/password with a space.
@@ -16,6 +17,7 @@ less safe. See [`ROADMAP.md`](ROADMAP.md) for what's still planned.
   Kubernetes/AWS *context names* (not credentials).
 
 ## Supply chain
+
 - Tools install from your **distro/Homebrew package manager first**; the piped
   `curl | sh` installers (starship, zoxide) are a labelled fallback only.
 - **`bootstrap.sh` is download-then-run, never `curl | sh`.** It exists only to
@@ -37,17 +39,20 @@ less safe. See [`ROADMAP.md`](ROADMAP.md) for what's still planned.
   `~/.local/share/zinit` and the plugin repos on locked-down hosts.
 
 ## Completions & PATH
+
 - `compinit` runs with `-i`: it keeps the security check and **skips** insecure
   (world/group-writable) completion directories instead of loading them — closing
   a completion-injection / privilege-escalation vector on shared hosts. It never
   runs with `-C` (which would bypass the check entirely).
 
 ## Git
+
 - git-delta is wired in via an **`include.path`** into `~/.gitconfig` — additive
   and reversible; your existing git config is never rewritten. Undo with:
   `git config --global --unset-all include.path '<repo>/git/delta.gitconfig'`.
 
 ## Key agents (SSH / GPG)
+
 - `GPG_TTY` is exported so `gpg` can prompt in your terminal (commit signing).
 - **ssh-agent is left to your platform** (gnome-keyring, systemd, 1Password,
   Vault, etc.) to avoid spawning a conflicting one. To auto-start a plain agent
@@ -63,6 +68,7 @@ less safe. See [`ROADMAP.md`](ROADMAP.md) for what's still planned.
   never in the repo — same rule as `~/.zshrc.local`.
 
 ## Passwords & AI keys
+
 - **`pass`** encrypts every secret to **your own GPG key** — nothing is installed
   with a key, and the store (`~/.password-store`) is yours to keep local or push to
   a **private** git remote. It complements the external SSH-agent setup above; use
@@ -75,12 +81,14 @@ less safe. See [`ROADMAP.md`](ROADMAP.md) for what's still planned.
   installed from a **SHA256-verified** GitHub release, same as lazygit/neovim.
 
 ## NAS backup (nas-sync)
+
 - `nas-sync` only ever runs `rsync` (additive — no `--delete`); it doesn't store or
   transmit credentials itself. The destination (`NAS_DEST`) and any SMB credentials
   live **per-machine** in `~/.zshrc.local` / `~/.nas-cred` (`chmod 600`), never the
   repo. Your `pass` store is GPG-encrypted, so it stays encrypted at rest on the NAS.
 
 ## Undo
+
 Before a real run touches anything, `install.sh` copies every config it may replace
 (plus `~/.gitconfig` and `~/.zshenv`) into one dated folder
 `~/backup/zsh/<ts>/` — so a bad config, an error mid-run, or a
@@ -91,5 +99,6 @@ and it prints the newest backup to restore from. `install.sh` also writes an aud
 trail of everything it changed to `~/.local/state/console/install-<ts>.log`.
 
 ## Reporting
+
 This repo has no formal disclosure process; open an issue on
 <https://github.com/morandeirachema/zsh> for anything security-relevant.

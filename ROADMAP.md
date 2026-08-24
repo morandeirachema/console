@@ -5,6 +5,7 @@ make it safe and pleasant on servers and privileged workstations, and what's
 still worth doing. Priority: **P1 = do next**, P2 = nice, P3 = later.
 
 ## ✅ Done (this pass)
+
 - **compinit `-C` → `-i`** — no longer bypasses the insecure-completion-dir
   security check (completion-injection / privesc risk on shared hosts).
 - **`~/.zshrc.local` is only sourced if owned by you** — blocks another account
@@ -33,6 +34,7 @@ still worth doing. Priority: **P1 = do next**, P2 = nice, P3 = later.
   is left to the platform with an opt-in snippet.
 
 ## ✅ Done (P2 batch)
+
 - **tmux config** (`tmux/tmux.conf`, symlinked) — mouse, vi copy, cwd-preserving
   splits, Catppuccin status bar matching the prompt.
 - **`jq` / `yq`**, **direnv** (hooked in `.zshrc`), **carapace** (guarded
@@ -44,11 +46,13 @@ still worth doing. Priority: **P1 = do next**, P2 = nice, P3 = later.
   `detect_*` filters to scope them to infra dirs.
 
 ## P1 — last mile
+
 - **Deeper pinning.** A full plugin lockfile (exact commit per plugin) and
   per-distro tool-version pins for byte-reproducible rebuilds. `ZINIT_PIN` +
   `scripts/vendor-plugins.sh` cover the common cases; this is what's left.
 
 ## ✅ Done (P3 batch)
+
 - **Audit log** — `install.sh` records every step to
   `~/.local/state/console/install-<ts>.log` for change-management/review.
 - **`uninstall.sh`** — reverses only the symlinks that point into this repo and
@@ -59,8 +63,10 @@ still worth doing. Priority: **P1 = do next**, P2 = nice, P3 = later.
   prod-vs-staging prompt-accent pattern.
 
 ## ✅ Done (video-ideas P1 batch)
+
 Ideas taken from three Mischa van den Burg videos (see
 [`IDEAS-FROM-VIDEOS.md`](IDEAS-FROM-VIDEOS.md)):
+
 - **tmux-sessionizer** — `prefix f` fzf-jumps to a project as a tmux session
   (`scripts/tmux-sessionizer.sh`, on `PATH`; roots via `TMUX_SESSIONIZER_PATHS`).
 - **fabric** — AI patterns as Unix filters; SHA256-verified release installer +
@@ -77,6 +83,7 @@ Ideas taken from three Mischa van den Burg videos (see
   `--server`/`--no-alacritty`. Removes the manual "set your terminal font" step.
 
 ## ✅ Done (hardening pass)
+
 - **CI now tests reversibility** — the `extras` job runs `./uninstall.sh` and
   asserts (via `scripts/ci-uninstall-check.sh`) that every symlink is gone, on
   Ubuntu/Fedora/Arch. Protects the "reversible" guarantee against regressions.
@@ -94,6 +101,7 @@ Ideas taken from three Mischa van den Burg videos (see
   matching Alacritty), linked whether or not kitty is installed; `--no-kitty` to skip.
 
 ## ✅ Done (bootstrap pass)
+
 - **`bootstrap.sh`** — closes the chicken-and-egg where `install.sh` installs `git`
   but you need `git` to clone the repo that holds `install.sh`. POSIX `sh` (runs
   before bash is guaranteed), installs git/curl/bash via the detected package
@@ -102,6 +110,7 @@ Ideas taken from three Mischa van den Burg videos (see
   CI proves it on **git-less** ubuntu/fedora/arch images.
 
 ## Future ideas
+
 - Full byte-reproducible plugin lockfile (see *P1 — last mile*).
 - Pin release-binary versions (fabric/lazygit/neovim/carapace fetch `latest`) for
   reproducibility, mirroring `ZINIT_PIN`.

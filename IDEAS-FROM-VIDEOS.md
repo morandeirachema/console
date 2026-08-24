@@ -45,10 +45,11 @@ Effort: S ≈ minutes, M ≈ an hour, L ≈ re-architecture.
 > in the repo; the shipped behavior matches. See `README.md` / `ROADMAP.md`.
 
 ### 1. `fabric` — AI patterns from the command line
+
 - **What:** Daniel Miessler's `fabric` runs reusable AI "patterns" (summarize, extract_wisdom,
   write_commit, etc.) as Unix filters. Video 1 pipes its output straight into Neovim; video 3
   lists it as one of the 5 tools. It's the only tool that shows up across **both** relevant videos.
-  https://github.com/danielmiessler/fabric
+  <https://github.com/danielmiessler/fabric>
 - **Maps to us:** a new optional dependency + guarded aliases, exactly like `lazygit`/`neovim`.
   - It's a Go binary not in distro repos → add an `install_fabric_release` GitHub-release helper
     (SHA256-verified, same shape as `install_lazygit_release`) with a `--no-fabric` gate.
@@ -59,6 +60,7 @@ Effort: S ≈ minutes, M ≈ an hour, L ≈ re-architecture.
 - **Watch out:** no network at zsh startup (repo rule) — fabric is invoked on demand only, so fine.
 
 ### 2. `tmux-sessionizer` — jump to any project as a tmux session
+
 - **What:** the "tmux as a window manager" pattern from videos 1 & 3: one keypress → fzf list of
   project dirs → attach/create a named tmux session for it. Origin ThePrimeagen; Mischa uses a variant.
 - **Maps to us:** we already ship `tmux/tmux.conf` **and** `fzf` **and** `fd` — this is the cheapest
@@ -68,8 +70,9 @@ Effort: S ≈ minutes, M ≈ an hour, L ≈ re-architecture.
 - **Why it fits:** self-contained, no new heavy deps, matches the existing "keyboard-centered" prompt/tmux setup.
 
 ### 3. `pass` — GPG-encrypted password store
+
 - **What:** the standard Unix password manager (GPG-encrypted files in a git repo). Featured in
-  videos 2 & 3. https://www.passwordstore.org/
+  videos 2 & 3. <https://www.passwordstore.org/>
 - **Maps to us:** `GPG_TTY` is **already exported** in `.zshrc`, so half the groundwork is done.
   - Install via `pkg_install pass` (it's in apt/dnf/pacman/brew) — no release-tarball helper needed.
   - Guarded aliases + an optional fzf "passmenu"-style picker (ties into idea #4).
@@ -78,6 +81,7 @@ Effort: S ≈ minutes, M ≈ an hour, L ≈ re-architecture.
     `SECURITY.md` — add `pass` as the lightweight, self-hosted option there.
 
 ### 4. Deeper fzf previews
+
 - **What:** video 3's fzf deep-dive is mostly about rich previews. We already have Ctrl-R / Ctrl-T /
   Alt-C wired and fd driving fzf, but the **preview** is minimal (fzf-tab `cd` shows plain `ls`).
 - **Maps to us:** small edits in `aliases.zsh` / `.zshrc`, all behind existing `command -v` guards:
@@ -92,6 +96,7 @@ Effort: S ≈ minutes, M ≈ an hour, L ≈ re-architecture.
 ## P2 — nice, but narrower payoff
 
 ### 5. SSH workflow helpers — ✅ done (2026-07-13)
+
 - Video 3 spends a chapter on "SSH beyond logging in" + port-forwarding into remote containers.
 - **Shipped:** three guarded zsh helpers in `zsh/aliases.zsh` — `fwd` (local `-L`), `rfwd` (remote
   `-R`), `socks` (dynamic `-D` SOCKS proxy) — each foreground with a keep-alive (`ServerAliveInterval=60`)
@@ -100,6 +105,7 @@ Effort: S ≈ minutes, M ≈ an hour, L ≈ re-architecture.
   guided-tour section; SECURITY.md notes tunnels bind localhost by default (no `GatewayPorts`).
 
 ### 6. Alacritty config — ✅ done (2026-07-12)
+
 - Video 1's terminal is Alacritty + zsh + tmux.
 - **Shipped:** `alacritty/alacritty.toml` (Catppuccin Mocha + JetBrainsMono Nerd Font to match the
   prompt/tmux/nvim), symlinked to `~/.config/alacritty/`. Installed by default on desktops (brew
@@ -108,6 +114,7 @@ Effort: S ≈ minutes, M ≈ an hour, L ≈ re-architecture.
   `extras` job. Other terminals (e.g. kitty) still work — nothing depends on Alacritty.
 
 ### 7. Synology NAS sync pattern — ✅ done (2026-07-13)
+
 - Video 2 syncs the password store / files to a Synology NAS. The user's NAS (192.168.1.211) speaks
   **SMB/CIFS only** — SSH/NFS/rsync-daemon are closed (see the `nas-backup-target` memory), so the path is
   mount-then-rsync-to-the-mount, not rsync-over-ssh.
@@ -122,18 +129,20 @@ Effort: S ≈ minutes, M ≈ an hour, L ≈ re-architecture.
 ## P3 — later / low priority
 
 ### 8. Notes capture (Zettelkasten / Johnny-Decimal)
+
 - Both video 1 (Zettelkasten update) and video 2 (Johnny-Decimal file org) cover note systems.
 - **Maps to us:** at most a tiny `note`/`zk` capture alias opening a dated markdown file in `$EDITOR`
   (nvim is already the default). Personal-workflow territory — only if the user wants it.
-  https://johnnydecimal.com/
+  <https://johnnydecimal.com/>
 
 ---
 
 ## Evaluate, then most likely **decline**
 
 ### 9. `chezmoi` instead of symlinks
+
 - Video 1 manages dotfiles with **chezmoi** (templating, secrets, per-machine diffs).
-  https://www.chezmoi.io/
+  <https://www.chezmoi.io/>
 - **Reality for us:** the repo's whole model is the **symlink** approach — documented in `CLAUDE.md`,
   covered by CI, with `install.sh`/`uninstall.sh` built around it. Switching to chezmoi is a
   re-architecture, not an add-on, and we'd lose the "edit repo file = edit live shell" property.
@@ -149,9 +158,9 @@ decision is explicit, not an oversight:
 
 - **Immutable OS** — Fedora Atomic / rpm-ostree / Cosmic / Sway vs Hyprland (videos 1 & 2).
 - **Containerized dev envs** — toolbox, flatpak, Podman, DevPod, devcontainers (videos 1 & 2).
-  https://containers.dev · https://devpod.sh
-- **Terminal email** — Aerc (video 1). https://aerc-mail.org
-- **Self-hosted git** — Forgejo (video 1). https://forgejo.org
+  <https://containers.dev> · <https://devpod.sh>
+- **Terminal email** — Aerc (video 1). <https://aerc-mail.org>
+- **Self-hosted git** — Forgejo (video 1). <https://forgejo.org>
 - Browser choice / privacy (video 1).
 
 If any of these are wanted, they should be their **own** repo/setup, not folded into `console`.

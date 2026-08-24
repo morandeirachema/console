@@ -2,7 +2,7 @@
 
 # ⌨️ &nbsp;console
 
-### Turn a plain terminal into a fast, friendly, guided workspace — **one clone, every machine.**
+<h3>Turn a plain terminal into a fast, friendly, guided workspace — <strong>one clone, every machine.</strong></h3>
 
 [![CI](https://github.com/morandeirachema/zsh/actions/workflows/ci.yml/badge.svg)](https://github.com/morandeirachema/zsh/actions/workflows/ci.yml)
 ![shell](https://img.shields.io/badge/shell-zsh-1e88e5)
@@ -167,7 +167,7 @@ Everything here is free, open-source, and cross-platform. You'll meet each one i
 [guided tour](#-a-guided-tour) below.
 
 | | Tool | In one line |
-|---|------|------|
+| --- | ------ | ------ |
 | 🔌 | [zinit](https://github.com/zdharma-continuum/zinit) | plugin manager — loads zsh plugins **async** so startup stays instant |
 | 🚀 | [starship](https://starship.rs) | the prompt: puts useful context on your command line |
 | 🔍 | [fzf](https://github.com/junegunn/fzf) | **fuzzy finder** — search history, files, and folders by typing a few letters |
@@ -218,7 +218,7 @@ that make it feel like it's helping you:
   **`↑`** to cycle only through matching history.
 
 > [!TIP]
-> **Try it now:** type `cd ~/code` and press Enter, then just type `cd ` and press
+> **Try it now:** type `cd ~/code` and press Enter, then just type `cd` and press
 > `Tab` — fuzzy-pick a subfolder. Type `gi` and watch the colour; type `git` and see
 > it go green.
 
@@ -265,13 +265,13 @@ noisy. Each pill answers a question:
 
 | Pill | Answers | Shows when |
 | ---- | ------- | ---------- |
-| ` user@host` | *which machine am I on?* (root shown in **red**) | you're connected over SSH |
+| `user@host` | *which machine am I on?* (root shown in **red**) | you're connected over SSH |
 | `󰕈 os` | *which OS / distro?* | always |
-| ` directory` | *where am I?* — repo root is **bold**, long paths shrink to `…/` | always |
-| ` git` | *what branch, and is it dirty?* | inside a git repo |
-| ` language` | *Node / Python / Rust / Go / Java / PHP / C version* | inside a matching project |
+| `directory` | *where am I?* — repo root is **bold**, long paths shrink to `…/` | always |
+| `git` | *what branch, and is it dirty?* | inside a git repo |
+| `language` | *Node / Python / Rust / Go / Java / PHP / C version* | inside a matching project |
 | `☸ k8s ·  aws · docker` | *which cluster / cloud account / container?* | when those are set |
-| *(far right)* | * how long the last command took* + * the time* | always |
+| *(far right)* | *how long the last command took* + *the time* | always |
 
 Git status uses tiny glyphs: `!` modified · `?` untracked · `+` staged · `»` renamed
 · `✘` deleted · `⇡`/`⇣` ahead/behind the remote. And the `❯` itself turns **red** when
@@ -341,7 +341,7 @@ go, then press the command key. Here the prefix is **`Ctrl-b`** (the default). S
 | Key | Does |
 | --- | ---- |
 | `prefix` `f` | **sessionizer** — fuzzy-pick a project folder → jump to its session |
-| `prefix` `|` / `-` | split the pane **vertically / horizontally** (keeps the folder) |
+| `prefix` `\|` / `-` | split the pane **vertically / horizontally** (keeps the folder) |
 | `prefix` `h` `j` `k` `l` | move between panes (vim directions) |
 | `Alt` + arrow keys | move between panes **without** the prefix |
 | `prefix` `H` `J` `K` `L` | resize the current pane (hold to repeat) |
@@ -358,9 +358,12 @@ go, then press the command key. Here the prefix is **`Ctrl-b`** (the default). S
 > script ([`scripts/tmux-sessionizer.sh`](scripts/tmux-sessionizer.sh)) is also on your
 > `PATH`, so `tmux-sessionizer` works from any shell.
 
+<!-- -->
+
 > [!IMPORTANT]
 > **Sessions survive reboots.** Via [tmux-resurrect](https://github.com/tmux-plugins/tmux-resurrect)
-> + [tmux-continuum](https://github.com/tmux-plugins/tmux-continuum), layouts auto-save
+>
+> - [tmux-continuum](https://github.com/tmux-plugins/tmux-continuum), layouts auto-save
 > every 15 min and restore on start (`prefix Ctrl-s` / `prefix Ctrl-r` to do it by
 > hand). Pane *contents* are deliberately **not** saved, so scrollback secrets never
 > hit disk.
@@ -447,7 +450,7 @@ and rebase — no flags to memorise. This is the gentlest on-ramp to git there i
 
 ---
 
-### ✍️ Neovim: modal editing, gently
+### ✍ Neovim: modal editing, gently
 
 [Neovim](https://neovim.io) is a fast, modern text editor that lives in your terminal.
 It's **modal**, which trips up newcomers but is the whole point once it clicks: instead
@@ -563,7 +566,7 @@ The 90% you'll use daily. Print it, screenshot it, forget the rest.
 
 Tool-specific aliases only exist when the tool is installed.
 
-**Files & search**
+### Files & search
 
 | Alias | Command |
 | ----- | ------- |
@@ -603,7 +606,7 @@ Tool-specific aliases only exist when the tool is installed.
 | `fsum` `fexplain` | `fabric --pattern summarize` · `explain_code` (pipe in) |
 | `ytsum <url>` | summarise a YouTube video's transcript |
 
-**Navigation & handy**
+### Navigation & handy
 
 | Alias | Command |
 | ----- | ------- |
@@ -692,6 +695,8 @@ exec zsh
 > Only copy a backup **after** the symlinks are gone (`rm` the single file, or run
 > `./uninstall.sh`). Copying onto a live symlink would overwrite the repo file it
 > points at.
+
+<!-- -->
 
 > [!NOTE]
 > The backup includes `~/.gitconfig` and `~/.zshenv` (the files the installer

@@ -8,3 +8,9 @@ config:
     line_length: 120
     tables: false
     code_blocks: false
+
+  # README.md opens with a centered <div> header and uses <details> collapsibles
+  # throughout — deliberate GitHub presentation, not stray markup.
+  MD033: false   # no-inline-html
+  # ...which also means line 1 is that <div>, not an h1.
+  MD041: false   # first-line-heading
