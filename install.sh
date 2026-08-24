@@ -201,10 +201,40 @@ install_neovim_release() {    # https://github.com/neovim/neovim/releases
   rm -rf "$tmp"
 }
 
-nvim_recent() {               # true if an installed nvim is >= 0.9.0
+install_tree_sitter_release() {  # https://github.com/tree-sitter/tree-sitter/releases
+  # nvim-treesitter's `main` branch shells out to the tree-sitter CLI to build
+  # parsers; without it :TSInstall can't compile anything.
+  local os arch asset tmp ver
+  case "$(uname -s)" in
+    Linux)  os="linux" ;;
+    Darwin) os="macos" ;;
+    *) return 1 ;;
+  esac
+  case "$(uname -m)" in
+    x86_64|amd64)  arch="x64" ;;
+    aarch64|arm64) arch="arm64" ;;
+    *) return 1 ;;
+  esac
+  dry && { info "[dry-run] download + install the tree-sitter CLI (GitHub release)"; return 0; }
+  ver="$(gh_curl https://api.github.com/repos/tree-sitter/tree-sitter/releases/latest \
+         | sed -n 's/.*"tag_name": *"v\([^"]*\)".*/\1/p' | head -1)"
+  [ -n "$ver" ] || return 1
+  asset="tree-sitter-${os}-${arch}.gz"
+  tmp="$(mktemp -d)"
+  curl -sSfL -o "$tmp/ts.gz" \
+    "https://github.com/tree-sitter/tree-sitter/releases/download/v${ver}/${asset}" \
+    || { rm -rf "$tmp"; return 1; }
+  # unlike neovim/lazygit/fabric, these release binaries ship no checksum file
+  warn "tree-sitter publishes no checksums — installing unverified"
+  gunzip -c "$tmp/ts.gz" > "$tmp/tree-sitter" || { rm -rf "$tmp"; return 1; }
+  mkdir -p "$HOME/.local/bin"; install "$tmp/tree-sitter" "$HOME/.local/bin/tree-sitter"
+  rm -rf "$tmp"
+}
+
+nvim_recent() {               # true if an installed nvim is >= 0.11.2 (LazyVim v16)
   have nvim || return 1
   local v; v="$(nvim --version 2>/dev/null | sed -n '1s/.*v\([0-9][0-9.]*\).*/\1/p')"
-  [ -n "$v" ] && [ "$(printf '%s\n0.9.0\n' "$v" | sort -V | head -1)" = "0.9.0" ]
+  [ -n "$v" ] && [ "$(printf '%s\n0.11.2\n' "$v" | sort -V | head -1)" = "0.11.2" ]
 }
 
 # --- package manager detection ---
@@ -307,6 +337,7 @@ doctor() {
     dg "nvim ($(XDG_STATE_HOME="$nst" nvim --version 2>/dev/null | sed -n 1p))"
     rm -rf "$nst"
   else dn "nvim missing"; fi
+  have tree-sitter && dg "tree-sitter CLI" || dn "tree-sitter CLI missing (nvim can't build parsers)"
   have alacritty && dg "alacritty" || dn "alacritty missing (expected on servers)"
   have kitty && dg "kitty" || dn "kitty not installed (config still linked if you use it)"
 
@@ -462,7 +493,7 @@ if [ "$MINIMAL" -eq 0 ] && [ "$NO_NVIM" -eq 0 ]; then
   info "Setting up Neovim + LazyVim…"
   if dry; then
     # don't call nvim_recent here — invoking nvim would create ~/.local/state/nvim
-    info "[dry-run] install build tools + ensure Neovim >= 0.9 (LazyVim)"
+    info "[dry-run] install build tools + ensure Neovim >= 0.11.2 (LazyVim) + the tree-sitter CLI"
   elif [ "$PM" = brew ]; then
     have cc || warn "run 'xcode-select --install' for a C compiler (nvim treesitter/telescope)"
     nvim_recent || pkg_install neovim || warn "neovim install failed — try: brew install neovim"
@@ -470,12 +501,24 @@ if [ "$MINIMAL" -eq 0 ] && [ "$NO_NVIM" -eq 0 ]; then
     pkg_install gcc make || warn "build tools (gcc/make) failed — some nvim plugins need them"
     if ! nvim_recent; then
       if [ "$OFFLINE" -eq 1 ]; then
-        pkg_install neovim || warn "offline: install neovim (>= 0.9) from your mirror"
+        pkg_install neovim || warn "offline: install neovim (>= 0.11.2) from your mirror"
       else
-        info "Installing a recent Neovim (LazyVim needs >= 0.9)…"
+        info "Installing a recent Neovim (LazyVim needs >= 0.11.2)…"
         install_neovim_release || warn "neovim install failed — see https://github.com/neovim/neovim/releases"
       fi
     fi
+  fi
+  # nvim-treesitter's `main` branch (LazyVim v16) builds parsers with this CLI
+  if ! dry && ! have tree-sitter; then
+    info "Installing the tree-sitter CLI…"
+    pkg_install tree-sitter-cli || {
+      if [ "$OFFLINE" -eq 1 ]; then
+        warn "offline: install the tree-sitter CLI from your mirror"
+      else
+        install_tree_sitter_release \
+          || warn "tree-sitter CLI failed — nvim can't build parsers; see https://github.com/tree-sitter/tree-sitter/releases"
+      fi
+    }
   fi
 fi
 
