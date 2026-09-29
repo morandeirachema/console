@@ -204,7 +204,7 @@ install_neovim_release() {    # https://github.com/neovim/neovim/releases
 install_tree_sitter_release() {  # https://github.com/tree-sitter/tree-sitter/releases
   # nvim-treesitter's `main` branch shells out to the tree-sitter CLI to build
   # parsers; without it :TSInstall can't compile anything.
-  local os arch asset tmp ver
+  local os arch asset tmp ver rel want got
   case "$(uname -s)" in
     Linux)  os="linux" ;;
     Darwin) os="macos" ;;
@@ -216,16 +216,28 @@ install_tree_sitter_release() {  # https://github.com/tree-sitter/tree-sitter/re
     *) return 1 ;;
   esac
   dry && { info "[dry-run] download + install the tree-sitter CLI (GitHub release)"; return 0; }
-  ver="$(gh_curl https://api.github.com/repos/tree-sitter/tree-sitter/releases/latest \
-         | sed -n 's/.*"tag_name": *"v\([^"]*\)".*/\1/p' | head -1)"
-  [ -n "$ver" ] || return 1
   asset="tree-sitter-${os}-${arch}.gz"
   tmp="$(mktemp -d)"
+  rel="$tmp/release.json"
+  gh_curl -o "$rel" https://api.github.com/repos/tree-sitter/tree-sitter/releases/latest \
+    || { rm -rf "$tmp"; return 1; }
+  ver="$(sed -n 's/.*"tag_name": *"v\([^"]*\)".*/\1/p' "$rel" | head -1)"
+  [ -n "$ver" ] || { rm -rf "$tmp"; return 1; }
   curl -sSfL -o "$tmp/ts.gz" \
     "https://github.com/tree-sitter/tree-sitter/releases/download/v${ver}/${asset}" \
     || { rm -rf "$tmp"; return 1; }
-  # unlike neovim/lazygit/fabric, these release binaries ship no checksum file
-  warn "tree-sitter publishes no checksums — installing unverified"
+  # tree-sitter ships no checksum file, but the GitHub API reports a SHA256
+  # `digest` per release asset — the first "digest" after our asset's "name".
+  want="$(awk -v a="\"name\": \"$asset\"" 'index($0, a) { f = 1 }
+          f && /"digest":/ { sub(/.*"sha256:/, ""); sub(/".*/, ""); print; exit }' "$rel")"
+  if [ -n "$want" ]; then
+    got="$(sha256_of "$tmp/ts.gz")"
+    if [ "$want" != "$got" ]; then
+      warn "tree-sitter checksum mismatch — refusing to install"; rm -rf "$tmp"; return 1
+    fi
+  else
+    warn "no SHA256 digest for $asset in the release metadata — installing unverified"
+  fi
   gunzip -c "$tmp/ts.gz" > "$tmp/tree-sitter" || { rm -rf "$tmp"; return 1; }
   mkdir -p "$HOME/.local/bin"; install "$tmp/tree-sitter" "$HOME/.local/bin/tree-sitter"
   rm -rf "$tmp"
