@@ -127,8 +127,13 @@ if command -v fzf >/dev/null; then
   if fzf --zsh >/dev/null 2>&1; then
     source <(fzf --zsh)                       # fzf >= 0.48
   else
-    [[ -f /usr/share/doc/fzf/examples/key-bindings.zsh ]] && source /usr/share/doc/fzf/examples/key-bindings.zsh
-    [[ -f /usr/share/doc/fzf/examples/completion.zsh   ]] && source /usr/share/doc/fzf/examples/completion.zsh
+    # older fzf: source the distro's copies. Debian/Ubuntu → doc/examples,
+    # Arch → /usr/share/fzf, Fedora/RHEL (EPEL) → /usr/share/fzf/shell (Fedora
+    # ships completion as _fzf in site-functions, so compinit picks it up).
+    for _f in {/usr/share/doc/fzf/examples,/usr/share/fzf,/usr/share/fzf/shell}/{key-bindings,completion}.zsh; do
+      [[ -f $_f ]] && source "$_f"
+    done
+    unset _f
   fi
 fi
 
