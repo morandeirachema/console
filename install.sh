@@ -304,6 +304,7 @@ doctor() {
   dg() { printf '  %s✓%s %s\n' "$G" "$Z" "$*"; }
   dn() { printf '  %s!%s %s\n' "$Y" "$Z" "$*"; issues=$((issues+1)); }
   dx() { printf '  %s✗%s %s\n' "$R" "$Z" "$*"; issues=$((issues+1)); }
+  do_() { printf '  %s·%s %s\n' "$B" "$Z" "$*"; }   # optional — informational, not counted
   dh() { printf '\n%s%s%s\n' "$B" "$*" "$Z"; }
   short() { printf '%s' "${1/#$HOME/\~}"; }
   dlink() {   # $1 = path, $2 = repo-relative expected target
@@ -341,8 +342,8 @@ doctor() {
     rm -rf "$nst"
   else dn "nvim missing"; fi
   have tree-sitter && dg "tree-sitter CLI" || dn "tree-sitter CLI missing (nvim can't build parsers)"
-  have alacritty && dg "alacritty" || dn "alacritty missing (expected on servers)"
-  have kitty && dg "kitty" || dn "kitty not installed (config still linked if you use it)"
+  have alacritty && dg "alacritty" || do_ "alacritty not installed (optional; expected on servers)"
+  have kitty && dg "kitty" || do_ "kitty not installed (optional; config still linked if you use it)"
 
   dh "Symlinks → repo"
   if [ -L "$cfg/zsh/.zshrc" ]; then dlink "$cfg/zsh/.zshrc" "zsh/.zshrc"   # --xdg layout
@@ -365,7 +366,7 @@ doctor() {
     else
       dn "JetBrainsMono Nerd Font not found (set your terminal font, or re-run without --no-font)"
     fi
-  else dn "fc-list unavailable — can't verify the Nerd Font (normal on macOS)"; fi
+  else do_ "fc-list unavailable — can't verify the Nerd Font (normal on macOS)"; fi
   if git config --global --get-all include.path 2>/dev/null | grep -qxF "$REPO_DIR/git/delta.gitconfig"; then
     dg "git-delta include active"
   else dn "git-delta include not set (delta not installed, or install not run)"; fi
@@ -374,7 +375,7 @@ doctor() {
   if [ -f "$HOME/.zshrc.local" ]; then
     [ -O "$HOME/.zshrc.local" ] && dg "found ~/.zshrc.local — owned by you" \
       || dx "wrong owner on ~/.zshrc.local → .zshrc will refuse to source it"
-  else dn "no ~/.zshrc.local yet (optional; template: zsh/zshrc.local.example)"; fi
+  else do_ "no ~/.zshrc.local yet (optional; template: zsh/zshrc.local.example)"; fi
 
   dh "Summary"
   if [ "$issues" -eq 0 ]; then printf '  %sall good — nothing to fix%s\n' "$G" "$Z"
