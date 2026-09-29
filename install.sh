@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ============================================================
 #  install.sh — bootstrap chema's zsh console on any Linux or macOS box
-#  Usage: ./install.sh [--dry-run] [--doctor] [--minimal] [--server] [--offline] [--no-nvim] [--no-fabric] [--no-alacritty] [--no-font] [--no-chsh] [-y]
+#  Usage: ./install.sh [--dry-run] [--doctor] [--minimal] [--server] [--offline] [--xdg] [--no-nvim] [--no-fabric] [--no-alacritty] [--no-kitty] [--no-font] [--no-chsh] [-y]
 #    --dry-run      show every package/symlink/change this run WOULD make — touch nothing
 #    --doctor       health check: report installed tools, symlinks, font, git config — then exit
 #    --minimal      only zsh + plugins + prompt (skip eza/bat/fd/rg/delta/tldr/lazygit/nvim/font)
@@ -41,7 +41,7 @@ for a in "$@"; do
     --no-kitty)     NO_KITTY=1;;
     --minimal)      MINIMAL=1; NO_FONT=1;;
     -y|--yes)       : ;;
-    -h|--help)      grep '^#' "$0" | sed '1d;s/^# \{0,1\}//'; exit 0;;   # 1d drops the shebang
+    -h|--help)      sed -n '2,/^set -euo/{/^#/s/^# \{0,1\}//p;}' "$0"; exit 0;;   # header block only
     *) echo "unknown option: $a"; exit 1;;
   esac
 done
