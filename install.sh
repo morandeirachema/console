@@ -278,6 +278,7 @@ snapshot() {
     "${XDG_CONFIG_HOME:-$HOME/.config}/lazygit/config.yml"
     "${XDG_CONFIG_HOME:-$HOME/.config}/nvim"
     "$HOME/.local/bin/tmux-sessionizer"
+    "$HOME/.local/bin/nas-sync"
     "$HOME/.gitconfig"                    # edited (delta include)
     "$HOME/.zshenv"                       # edited (--xdg ZDOTDIR)
   )
@@ -349,6 +350,7 @@ doctor() {
   dlink "$cfg/starship.toml"                "starship/starship.toml"
   dlink "$cfg/tmux/tmux.conf"               "tmux/tmux.conf"
   dlink "$HOME/.local/bin/tmux-sessionizer" "scripts/tmux-sessionizer.sh"
+  dlink "$HOME/.local/bin/nas-sync"         "scripts/nas-sync.sh"
   dlink "$cfg/alacritty/alacritty.toml"     "alacritty/alacritty.toml"
   dlink "$cfg/kitty/kitty.conf"             "kitty/kitty.conf"
   dlink "$cfg/lazygit/config.yml"           "lazygit/config.yml"
