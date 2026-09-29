@@ -46,6 +46,9 @@ jobs:
           n="$(find "$h" -mindepth 1 | wc -l)"
           [ "$n" -eq 0 ] || { echo "::error::--dry-run/--doctor wrote $n entries to \$HOME"; find "$h" -mindepth 1; exit 1; }
           echo "✓ dry-run + doctor: exit 0, zero writes"
+      - name: markdownlint (docs)
+        # pinned so a new release's rules can't turn CI red without a docs change
+        run: npx --yes markdownlint-cli2@0.23.3 "**/*.md" "#node_modules"
       - name: Lua parse (nvim config)
         run: |
           sudo apt-get install -y lua5.4 || sudo apt-get install -y lua5.3 || true
