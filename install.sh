@@ -320,6 +320,8 @@ doctor() {
   dh "Core"
   for t in zsh git curl starship; do have "$t" && dg "$t ($(command -v "$t"))" || dx "$t missing"; done
   if [ -d "${XDG_DATA_HOME:-$HOME/.local/share}/zinit/zinit.git" ]; then dg "zinit cloned"
+  elif [ -e "${XDG_DATA_HOME:-$HOME/.local/share}/zinit/.clone-failed" ]; then
+    dx "zinit clone failed earlier — plugins off (retry: rm ${XDG_DATA_HOME:-$HOME/.local/share}/zinit/.clone-failed)"
   else dn "zinit not cloned yet (installs on first zsh launch)"; fi
 
   dh "CLI tools"

@@ -53,47 +53,60 @@ ZINIT_HOME="${XDG_DATA_HOME:-$HOME/.local/share}/zinit/zinit.git"
 # For reproducible / air-gapped installs, pin zinit to a commit or tag by
 # exporting ZINIT_PIN before the shell starts (e.g. in ~/.zshenv). Empty = latest.
 : "${ZINIT_PIN:=}"
-if [[ ! -d "$ZINIT_HOME" ]]; then
+# A failed clone (offline / air-gapped box) drops this marker so later shells
+# don't retry the network on every startup. `rm` it to try again.
+ZINIT_FAILED="${ZINIT_HOME:h}/.clone-failed"
+if [[ ! -d "$ZINIT_HOME" && ! -e "$ZINIT_FAILED" ]]; then
   print -P "%F{cyan}▓▒░ Installing zinit (one time)…%f"
-  command mkdir -p "$(dirname "$ZINIT_HOME")"
-  command git clone --depth 1 https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME" \
-    && print -P "%F{green}▓▒░ zinit installed.%f" \
-    || print -P "%F{red}▓▒░ zinit clone failed.%f"
-  [[ -n "$ZINIT_PIN" ]] && command git -C "$ZINIT_HOME" checkout -q "$ZINIT_PIN" 2>/dev/null
+  command mkdir -p "${ZINIT_HOME:h}"
+  if command git clone --depth 1 https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME"; then
+    print -P "%F{green}▓▒░ zinit installed.%f"
+    [[ -n "$ZINIT_PIN" ]] && command git -C "$ZINIT_HOME" checkout -q "$ZINIT_PIN" 2>/dev/null
+  else
+    print -P "%F{red}▓▒░ zinit clone failed — plugins off. Retry: rm $ZINIT_FAILED%f"
+    command rm -rf "$ZINIT_HOME"; : >| "$ZINIT_FAILED"
+  fi
 fi
-source "$ZINIT_HOME/zinit.zsh"
 
-# ------------------------------------------------------------
-#  Plugins — zinit TURBO mode (loaded async, right after the
-#  prompt appears → instant startup).
-#  https://github.com/zdharma-continuum/zinit#turbo-mode-zsh--53
-# ------------------------------------------------------------
-# First wave: highlighting + completions + autosuggestions.
-# compinit runs ONCE here via zicompinit (inside atinit), then the
-# completion cache is replayed with zicdreplay — do not also call
-# compinit synchronously elsewhere.
-# COMPINIT_OPTS=-i keeps compinit's security check but silently skips
-# insecure (world/group-writable) fpath dirs instead of loading them or
-# prompting. Do NOT use -C here: it bypasses the check entirely, which on a
-# shared/hardened host is a completion-injection (privesc) risk.
-zinit wait lucid light-mode for \
-  atinit"ZINIT[COMPINIT_OPTS]=-i; zicompinit; zicdreplay" \
-      zdharma-continuum/fast-syntax-highlighting \
-  blockf \
-      zsh-users/zsh-completions \
-  atload"!_zsh_autosuggest_start" \
-      zsh-users/zsh-autosuggestions
+if [[ -r "$ZINIT_HOME/zinit.zsh" ]]; then
+  source "$ZINIT_HOME/zinit.zsh"
 
-# Second wave: fzf-tab (must load after compinit), you-should-use
-# (nudges you when a typed command has an alias you defined), and
-# history-substring-search. Its keys are bound in atload because in
-# turbo mode the widget does not exist until the plugin is sourced.
-YSU_MESSAGE_POSITION="after"
-zinit wait lucid light-mode for \
-  Aloxaf/fzf-tab \
-  MichaelAquilina/zsh-you-should-use \
-  atload'bindkey "^[[A" history-substring-search-up; bindkey "^[[B" history-substring-search-down; bindkey "^P" history-substring-search-up; bindkey "^N" history-substring-search-down' \
-      zsh-users/zsh-history-substring-search
+  # ------------------------------------------------------------
+  #  Plugins — zinit TURBO mode (loaded async, right after the
+  #  prompt appears → instant startup).
+  #  https://github.com/zdharma-continuum/zinit#turbo-mode-zsh--53
+  # ------------------------------------------------------------
+  # First wave: highlighting + completions + autosuggestions.
+  # compinit runs ONCE here via zicompinit (inside atinit), then the
+  # completion cache is replayed with zicdreplay — do not also call
+  # compinit synchronously elsewhere.
+  # COMPINIT_OPTS=-i keeps compinit's security check but silently skips
+  # insecure (world/group-writable) fpath dirs instead of loading them or
+  # prompting. Do NOT use -C here: it bypasses the check entirely, which on a
+  # shared/hardened host is a completion-injection (privesc) risk.
+  zinit wait lucid light-mode for \
+    atinit"ZINIT[COMPINIT_OPTS]=-i; zicompinit; zicdreplay" \
+        zdharma-continuum/fast-syntax-highlighting \
+    blockf \
+        zsh-users/zsh-completions \
+    atload"!_zsh_autosuggest_start" \
+        zsh-users/zsh-autosuggestions
+
+  # Second wave: fzf-tab (must load after compinit), you-should-use
+  # (nudges you when a typed command has an alias you defined), and
+  # history-substring-search. Its keys are bound in atload because in
+  # turbo mode the widget does not exist until the plugin is sourced.
+  YSU_MESSAGE_POSITION="after"
+  zinit wait lucid light-mode for \
+    Aloxaf/fzf-tab \
+    MichaelAquilina/zsh-you-should-use \
+    atload'bindkey "^[[A" history-substring-search-up; bindkey "^[[B" history-substring-search-down; bindkey "^P" history-substring-search-up; bindkey "^N" history-substring-search-down' \
+        zsh-users/zsh-history-substring-search
+else
+  # No zinit (clone failed / offline): still give the shell working completion.
+  # Same -i security posture as the turbo path above — never -C.
+  autoload -Uz compinit && compinit -i
+fi
 
 # ------------------------------------------------------------
 #  Completion styling (zstyles are read lazily at completion time)
