@@ -89,6 +89,32 @@ jobs:
             echo "smoke OK on ${{ matrix.name }}"
           '
 
+  # macOS is a first-class target (brew path, casks, no gcc/make, chsh skip) —
+  # exercise it for real on a GitHub macOS runner, which ships Homebrew.
+  macos:
+    needs: lint
+    runs-on: macos-latest
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: 1
+      HOMEBREW_NO_INSTALL_CLEANUP: 1
+    steps:
+      - uses: actions/checkout@v7
+      - name: --dry-run and --doctor exit 0 and touch nothing (brew path)
+        run: |
+          h="$(mktemp -d)"
+          HOME="$h" ./install.sh --dry-run -y --no-chsh >/dev/null
+          HOME="$h" ./install.sh --doctor              >/dev/null
+          n="$(find "$h" -mindepth 1 | wc -l | tr -d ' ')"
+          [ "$n" -eq 0 ] || { echo "::error::--dry-run/--doctor wrote $n entries to \$HOME"; find "$h" -mindepth 1; exit 1; }
+          echo "✓ dry-run + doctor: exit 0, zero writes"
+      - name: Minimal install on macOS
+        run: |
+          ./install.sh --minimal --no-chsh -y
+          test -L "$HOME/.zshrc"                || { echo "::error::~/.zshrc not symlinked";      exit 1; }
+          test -L "$HOME/.config/starship.toml" || { echo "::error::starship.toml not symlinked"; exit 1; }
+          zsh -ic "exit 0"                      || { echo "::error::interactive zsh failed";      exit 1; }
+          echo "smoke OK on macOS"
+
   bootstrap:
     needs: lint
     runs-on: ubuntu-latest
