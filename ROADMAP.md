@@ -109,6 +109,23 @@ Ideas taken from three Mischa van den Burg videos (see
   clobber a non-git directory; `--dry-run`, `--no-install`, `--dir`, `--repo`.
   CI proves it on **git-less** ubuntu/fedora/arch images.
 
+## ✅ Done (review pass, 2026-09)
+
+- **zinit clone failure degrades gracefully** — an offline box used to print
+  `command not found: zinit`, get no completion at all, and retry the clone on every
+  startup. Now plain `compinit -i` takes over and a `.clone-failed` marker stops the
+  retries (`--doctor` reports it with the retry command).
+- **`--help`** prints only the usage header, not every internal comment.
+- **CI on macOS** — a `macos-latest` job runs the zero-writes dry-run/doctor check and
+  a real `--minimal` brew install.
+- **markdownlint in CI** — pinned `markdownlint-cli2`, same config as the editor.
+- **`nas-sync`** is now covered by the pre-install snapshot and `--doctor`.
+- **`--doctor` separates optional items** (kitty, alacritty, `~/.zshrc.local`,
+  fc-list on macOS) so the issue count only counts real problems.
+- **tree-sitter CLI is SHA256-verified** against the GitHub API's per-asset `digest`
+  — every release binary is now checked.
+- **Older fzf on Fedora/RHEL/Arch** gets its key bindings (distro paths added).
+
 ## Future ideas
 
 - Full byte-reproducible plugin lockfile (see *P1 — last mile*).

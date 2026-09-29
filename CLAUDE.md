@@ -49,6 +49,8 @@ in. Consequences that must be preserved when editing the plugin block:
 
 - `compinit` runs **once**, inside the first turbo wave's `atinit` (`zicompinit; zicdreplay`).
   Do **not** add a synchronous `compinit`/`zinit cdreplay` too, or it runs twice.
+  The one exception is the `else` branch taken when zinit is missing (clone failed/offline):
+  it runs a plain `compinit -i` so the shell still has completion.
 - A keybinding for an async plugin (e.g. history-substring-search's Up/Down/Ctrl-P/N) must be
   set in that plugin's `atload` hook — the widget does not exist until the async load finishes.
   Binding it at top level silently no-ops.
