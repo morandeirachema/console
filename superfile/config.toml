@@ -1,0 +1,36 @@
+# superfile (spf) — TUI file manager. Symlinked by install.sh to
+#   ~/.config/superfile/config.toml           (Linux)
+#   ~/Library/Application Support/superfile/  (macOS)
+# Reference: https://superfile.dev/configure/superfile-config/
+# Keys: https://superfile.dev/list/keybinds-list/   ·  `?` inside spf shows them.
+
+theme = "catppuccin-mocha"      # matches the prompt, tmux, Ghostty and nvim
+nerdfont = true                 # icons (JetBrainsMono Nerd Font is installed by install.sh)
+transparent_background = false
+
+editor = ""                     # empty = $EDITOR (nvim here)
+dir_editor = ""
+code_previewer = "bat"          # syntax-highlighted file previews (falls back to the builtin)
+default_open_file_preview = true
+show_image_preview = true
+show_panel_footer_info = true
+metadata = false                # press `m` to toggle the metadata panel
+
+default_directory = "."
+zoxide_support = true           # `z`-style jumps inside spf, same database as the shell
+cd_on_quit = true               # the `spf` shell function cds to the last directory on exit
+
+auto_check_update = false       # no network at launch (servers, air-gapped boxes)
+file_size_use_si = false
+default_sort_type = 0           # 0 name · 1 size · 2 modified · 3 type · 4 natural
+sort_order_reversed = false
+case_sensitive_sort = false
+shell_close_on_success = false
+page_scroll_size = 0
+ignore_missing_fields = true    # newer spf versions add keys; don't nag on older configs
+file_panel_extra_columns = 0
+file_panel_name_percent = 50
+file_preview_width = 0
+sidebar_width = 20
+enable_md5_checksum = false
+debug = false

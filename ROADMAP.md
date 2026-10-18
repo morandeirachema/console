@@ -111,6 +111,25 @@ Ideas taken from three Mischa van den Burg videos (see
 
 ## ✅ Done (terminal pass, 2026-10)
 
+- **atuin replaces fzf for Ctrl-R** — `atuin/config.toml`: fuzzy search, compact inline UI,
+  `enter_accept = false` (Enter edits, never runs), secrets filter, leading-space lines
+  never recorded, no update check or sync at startup (sync is opt-in). install.sh imports
+  the existing zsh history once; Up/Down stay with history-substring-search; fzf keeps
+  Ctrl-T / Alt-C and is the Ctrl-R fallback. Release binary with per-asset `.sha256`.
+- **sesh behind `prefix f`** (chosen over tmuxinator/tmuxp/sessionx after a comparison —
+  single Go binary, merges tmux sessions + zoxide dirs + `sesh/sesh.toml`, fzf-tmux popup).
+  `scripts/sesh-picker.sh` holds the picker and falls back to `tmux-sessionizer` without
+  sesh; `proj` runs it from the shell; `prefix S` = previous session. resurrect/continuum
+  stay for reboot survival (sesh doesn't persist state).
+- **superfile** (`spf`/`fm`) — Catppuccin Mocha, bat previews, zoxide jumps, cd-on-quit via
+  a shell wrapper; config linked to XDG on Linux, `~/Library/Application Support` on macOS.
+- **The prompt's Nerd Font glyphs were missing since day one** — every BMP private-use glyph
+  in `starship.toml` (pill caps, folder, branch, OS, lang, docker, aws, clock) had been
+  stripped to `""`; restored all 56 (README sample too).
+- **`MANUAL.md`** with real screenshots (`docs/screenshots/`, captured headless via
+  tmux → ANSI → HTML → Chrome, see CLAUDE.md) and **`CHANGELOG.md`**; repo renamed
+  `zsh` → `console`.
+
 - **Ghostty is the default terminal** — `ghostty/config` (Catppuccin Mocha + JetBrainsMono
   Nerd Font, explicit palette so it stays byte-identical to the Alacritty/kitty presets),
   installed on desktops (brew cask on macOS, `pkg_install` on Arch/Fedora, a labelled

@@ -25,16 +25,20 @@ jobs:
       - name: bash -n (install.sh) / sh -n (bootstrap.sh)
         run: |
           bash -n install.sh
+          bash -n scripts/sesh-picker.sh scripts/tmux-sessionizer.sh scripts/nas-sync.sh
           sh   -n bootstrap.sh
           dash -n bootstrap.sh   # stricter POSIX parse than bash-as-sh
       - name: zsh -n (zsh configs)
         run: |
           zsh -n zsh/.zshrc
           zsh -n zsh/aliases.zsh
-      - name: Validate TOML (starship + alacritty)
+      - name: Validate TOML (starship + alacritty + atuin + sesh + superfile)
         run: |
           python3 -c "import tomllib; tomllib.load(open('starship/starship.toml','rb'))"
           python3 -c "import tomllib; tomllib.load(open('alacritty/alacritty.toml','rb'))"
+          python3 -c "import tomllib; tomllib.load(open('atuin/config.toml','rb'))"
+          python3 -c "import tomllib; tomllib.load(open('sesh/sesh.toml','rb'))"
+          python3 -c "import tomllib; tomllib.load(open('superfile/config.toml','rb'))"
       - name: Validate ghostty config (key = value lint; full check only if ghostty is present)
         run: |
           if grep -vE '^\s*(#|$)' ghostty/config | grep -vE '^[a-z-]+ = .+$'; then

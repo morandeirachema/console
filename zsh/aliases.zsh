@@ -39,7 +39,8 @@ unset _FD_BIN
 
 # --- fzf previews: bat for files, eza-tree for dirs (all guarded) ---
 # Ctrl-T previews the file, Alt-C previews the directory, Ctrl-R shows the full
-# command. Toggle any preview with Ctrl-/.  Read lazily by fzf at invoke time.
+# command (fzf's Ctrl-R is the fallback when atuin isn't installed). Toggle any
+# preview with Ctrl-/.  Read lazily by fzf at invoke time.
 if command -v fzf >/dev/null; then
   # Use $commands (real executables only) — not `command -v`, which would match the
   # `bat` alias we set above and break the preview under fzf's plain `sh -c`.
@@ -56,6 +57,12 @@ if command -v fzf >/dev/null; then
   export FZF_ALT_C_OPTS="--preview '$_fztree' --preview-window=right:50% --bind ctrl-/:toggle-preview"
   export FZF_CTRL_R_OPTS="--preview 'echo {}' --preview-window=down:3:wrap --bind ctrl-/:toggle-preview"
   unset _fzcat _fztree
+fi
+
+# --- atuin — history database (Ctrl-R is bound in .zshrc) ---
+if command -v atuin >/dev/null; then
+  alias h='atuin search -i'            # the same picker, from the command line
+  alias hstats='atuin stats'           # most-used commands
 fi
 
 # --- rg (ripgrep) — fast recursive grep ---
@@ -88,6 +95,22 @@ if command -v fabric >/dev/null; then
   # First run: `fabric --setup`. Keep provider API keys in ~/.zshrc.local, not the repo.
 fi
 
+# --- superfile (spf) — TUI file manager; the wrapper makes `cd_on_quit` work ---
+# https://superfile.dev  ·  `?` inside for keys  ·  `fm` is the same thing
+if command -v spf >/dev/null; then
+  spf() {
+    emulate -L zsh
+    local last
+    case "$(uname -s)" in
+      Darwin) last="$HOME/Library/Application Support/superfile/lastdir" ;;
+      *)      last="${XDG_STATE_HOME:-$HOME/.local/state}/superfile/lastdir" ;;
+    esac
+    SPF_LAST_DIR="$last" command spf "$@"
+    [[ -f "$last" ]] && { builtin source "$last"; command rm -f -- "$last"; }
+  }
+  alias fm='spf'
+fi
+
 # --- neovim as the default editor ---
 if command -v nvim >/dev/null; then
   alias vi='nvim'
@@ -114,6 +137,12 @@ fi
 command -v terraform  >/dev/null && alias tf='terraform'
 command -v ansible    >/dev/null && alias ap='ansible-playbook'
 command -v tmux       >/dev/null && { alias t='tmux'; alias ta='tmux attach'; alias tls='tmux ls'; }
+# proj — the prefix+f project picker from the shell; `proj <name>` connects straight to it.
+# sesh-picker degrades to tmux-sessionizer when sesh isn't installed.
+if command -v sesh-picker >/dev/null; then
+  proj() { sesh-picker "$@"; }
+  command -v sesh >/dev/null && alias sl='sesh list --icons'
+fi
 if command -v systemctl >/dev/null; then
   alias sc='systemctl'
   alias scu='systemctl --user'

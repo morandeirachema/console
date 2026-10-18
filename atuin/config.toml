@@ -1,0 +1,28 @@
+# atuin — searchable shell-history database, bound to Ctrl-R by .zshrc.
+# Symlinked to ~/.config/atuin/config.toml by install.sh.
+# Reference: https://docs.atuin.sh/configuration/config/   ·   `atuin default-config` prints every key.
+#
+# Up/Down are NOT taken over (init runs with --disable-up-arrow): they stay with
+# zsh-history-substring-search. Ctrl-T / Alt-C stay with fzf.
+
+# --- no network at startup; sync is opt-in (`atuin register`/`atuin login`, then auto_sync = true in ~/.zshrc.local) ---
+update_check = false
+auto_sync = false
+
+# --- search UI ---
+style = "compact"              # one line per entry, no borders — fits a tmux pane
+inline_height = 20             # draw below the prompt instead of full-screen
+show_preview = true            # the full command of the highlighted entry
+search_mode = "fuzzy"          # type a few letters in order, like fzf
+filter_mode = "global"         # start with all hosts/sessions; Ctrl-R again cycles host → session → directory
+exit_mode = "return-original"  # Esc gives you back whatever you had typed
+
+# --- safety: Enter puts the command on the line to review; it does not run it ---
+enter_accept = false
+# never record lines that look like credentials (AWS keys, GitHub tokens, Slack, …)
+secrets_filter = true
+# honour "start with a space = off the record", same as HIST_IGNORE_SPACE
+history_filter = ["^\\s"]
+
+# Ctrl-R inside the picker cycles filter modes; Ctrl-O opens the inspector; Tab edits the entry.
+keymap_mode = "emacs"

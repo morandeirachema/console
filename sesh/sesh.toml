@@ -1,0 +1,30 @@
+# sesh — tmux session manager, bound to prefix+f (and the `proj` command) via scripts/sesh-picker.sh.
+# Symlinked to ~/.config/sesh/sesh.toml by install.sh.
+# Reference: https://github.com/joshmedeski/sesh#configuration
+#
+# The picker lists three sources: running tmux sessions, directories zoxide knows
+# (every folder you've cd'ed into), and the [[session]] entries declared here.
+
+[default_session]
+# What the picker previews on the right: a directory listing (eza if present, else ls).
+preview_command = "eza --all --git --icons --color=always --group-directories-first {} 2>/dev/null || ls -la {}"
+
+# --- Declared sessions: name + path, optional startup command and windows. ---
+# Keep machine-specific ones out of the repo: sesh also reads
+# ~/.config/sesh/sesh.local.toml if you `include` it — or just add [[session]]
+# blocks to this file on the machine (the symlink makes that a repo edit, so commit
+# only the ones every machine should have).
+#
+# [[session]]
+# name = "console"
+# path = "~/code/console"
+# startup_command = "nvim README.md"
+#
+# [[session]]
+# name = "infra"
+# path = "~/work/infra"
+# windows = ["edit", "logs"]
+#
+# [[window]]
+# name = "logs"
+# startup_command = "tail -f /var/log/syslog"

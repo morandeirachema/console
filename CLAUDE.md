@@ -79,8 +79,24 @@ Arch/Fedora, a `warn` pointing at ghostty.org/download on Debian/Ubuntu, which h
 Alacritty and kitty configs are shipped and symlinked but never installed. All three presets must keep the
 same Catppuccin Mocha hexes and font; the Ghostty one must keep `ssh-terminfo` enabled or `TERM=xterm-ghostty`
 breaks on servers.
-Two tools that are often absent from distro repos (lazygit, neovim) have `install_*_release` helpers that
-fetch the right arch tarball from GitHub into `~/.local/bin` — follow that pattern for similar tools.
+**atuin owns Ctrl-R.** `.zshrc` runs `atuin init zsh --disable-up-arrow` *after* the fzf block so its
+binding wins; fzf keeps Ctrl-T/Alt-C and is the Ctrl-R fallback when atuin is absent. Keep
+`enter_accept = false`, `update_check = false` and `auto_sync = false` in `atuin/config.toml` (nothing runs
+on Enter, no network at startup). **sesh** is reached only through `scripts/sesh-picker.sh` (symlinked to
+`~/.local/bin/sesh-picker`): tmux's `prefix f` and the `proj` function both call it, and it falls back to
+`tmux-sessionizer` when sesh is missing, so never bind sesh directly in `tmux.conf`. **superfile**'s config
+path differs per OS; use `spf_cfg_dir` in install.sh rather than hardcoding `~/.config/superfile`.
+**Nerd Font glyphs in config files are easy to lose**: some editors/tools strip private-use characters.
+`starship/starship.toml` must contain its pill caps (U+E0B6/U+E0B4) and icons; check with
+`python3 -c "t=open('starship/starship.toml',encoding='utf-8').read(); print(len([c for c in t if ord(c)>=0xE000]))"`
+(expect ~56). The README prompt sample and MANUAL screenshots depend on them.
+**Screenshots** in `docs/screenshots/` are real captures: a headless `tmux -L shots` pane running the repo's
+zsh in a throw-away HOME (symlinks to the real `.config`/`.local`, a curated `.zsh_history`, isolated atuin
+and zoxide DBs so nothing private leaks), `capture-pane -e` → a small ANSI-to-HTML script → headless Chrome.
+Regenerate them the same way rather than pasting terminal screenshots with personal data.
+Tools that are often absent from distro repos (lazygit, neovim, atuin, sesh, superfile, carapace, fabric) have
+`install_*_release` helpers that fetch the right arch tarball from GitHub into `~/.local/bin` and verify its
+SHA256 against the release's checksum file — follow that pattern for similar tools.
 
 **Neovim / LazyVim is vendored, not cloned per machine.** `nvim/` holds the LazyVim *starter* (init.lua +
 `lua/config/*` + `lua/plugins/*`); `install.sh` symlinks the whole dir to `~/.config/nvim`. The LazyVim

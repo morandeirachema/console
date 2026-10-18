@@ -61,6 +61,20 @@ fi
 [ -L "$HOME/.config/kitty/kitty.conf" ] && ok "kitty.conf symlinked" || bad "kitty.conf not symlinked"
 command -v ghostty >/dev/null && ok "ghostty installed" || note "ghostty binary not installed (no package on this distro?) — non-fatal"
 
+# --- atuin: config symlinked (hard); binary via package or verified release (hard) ---
+[ -L "$HOME/.config/atuin/config.toml" ] && ok "atuin config symlinked" || bad "atuin config not symlinked"
+command -v atuin >/dev/null && ok "atuin installed ($(atuin --version 2>/dev/null | head -1))" || bad "atuin binary missing"
+
+# --- sesh: config + picker symlinked (hard); binary via brew/release (hard); picker runs without sesh too ---
+[ -L "$HOME/.config/sesh/sesh.toml" ] && ok "sesh.toml symlinked" || bad "sesh.toml not symlinked"
+[ -x "$HOME/.local/bin/sesh-picker" ] && ok "sesh-picker on PATH" || bad "sesh-picker missing"
+command -v sesh >/dev/null && ok "sesh installed ($(sesh --version 2>/dev/null | head -1))" || bad "sesh binary missing"
+bash -n "$HOME/.local/bin/sesh-picker" && ok "sesh-picker parses" || bad "sesh-picker syntax error"
+
+# --- superfile: config symlinked (hard); binary via package/release (hard) ---
+[ -L "$HOME/.config/superfile/config.toml" ] && ok "superfile config symlinked" || bad "superfile config not symlinked"
+command -v spf >/dev/null && ok "superfile installed ($(spf --version 2>/dev/null | head -1))" || bad "spf binary missing"
+
 # --- fabric: hard-verify IF present; warn (don't fail) if the fetch was missed ---
 if command -v fabric >/dev/null; then
   if fabric --version </dev/null >/dev/null 2>&1; then

@@ -1,10 +1,12 @@
 # lazygit config — https://github.com/jesseduffield/lazygit
 # Options reference: https://github.com/jesseduffield/lazygit/blob/master/docs/Config.md
+# NB: lazygit auto-migrates this file to its current schema on launch (git.paging → git.diffRenderers
+# in 2026-10) and writes it back through the symlink — commit what it writes.
 gui:
-  nerdFontsVersion: "3"   # file-type / git icons (needs a Nerd Font in your terminal)
+  nerdFontsVersion: "3" # file-type / git icons (needs a Nerd Font in your terminal)
   showFileTree: true
   showRandomTip: false
 git:
-  paging:
-    colorArg: always
-    pager: delta --paging=never   # reuse git-delta so lazygit diffs match your CLI diffs
+  diffRenderers:
+    - colorArg: always
+      command: delta --paging=never # reuse git-delta so lazygit diffs match your CLI diffs

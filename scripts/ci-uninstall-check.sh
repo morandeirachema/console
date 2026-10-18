@@ -20,6 +20,10 @@ for p in \
   "$HOME/.local/bin/tmux-sessionizer" \
   "$HOME/.local/bin/nas-sync" \
   "$cfg/ghostty/config" \
+  "$cfg/atuin/config.toml" \
+  "$cfg/sesh/sesh.toml" \
+  "$cfg/superfile/config.toml" \
+  "$HOME/.local/bin/sesh-picker" \
   "$cfg/alacritty/alacritty.toml" \
   "$cfg/kitty/kitty.conf" \
   "$cfg/lazygit/config.yml"; do

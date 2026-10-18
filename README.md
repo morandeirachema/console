@@ -11,12 +11,13 @@
 ![theme](https://img.shields.io/badge/theme-Catppuccin%20Mocha-cba6f7)
 
 ```console
- 󰕈    ~/code/console    main   !2 ?1                              2.4s   14:32:07
+ 󰕈   ~/code/console    main   !2 ?1                        2.4s   14:32:07
 ❯ ▏
 ```
 
 *New to all this? Start with the **[2-minute mental model](#-never-used-a-terminal-like-this-2-minute-mental-model)**.*
 *Just want it running? **[Quick start](#-quick-start)**.*
+*Want every key and every screen? **[The manual](MANUAL.md)** (with screenshots) · **[Changelog](CHANGELOG.md)**.*
 
 **[Mental model](#-never-used-a-terminal-like-this-2-minute-mental-model)** ·
 **[Quick start](#-quick-start)** ·
@@ -185,6 +186,9 @@ Everything here is free, open-source, and cross-platform. You'll meet each one i
 | 🔑 | [pass](https://www.passwordstore.org) | GPG-encrypted password manager (bring your own key) |
 | 🤖 | [fabric](https://github.com/danielmiessler/fabric) | run AI prompts as normal commands (`--no-fabric` to skip) |
 | 🖥️ | [Ghostty](https://ghostty.org) | fast, native GPU terminal, pre-themed to match (`--no-ghostty` to skip) |
+| 🕘 | [atuin](https://atuin.sh) | `Ctrl-R` history as a searchable database (secrets filtered, nothing runs on Enter) |
+| 🗂️ | [sesh](https://github.com/joshmedeski/sesh) | `prefix f` / `proj`: one picker for tmux sessions + known folders |
+| 📁 | [superfile](https://superfile.dev) | `spf`: a file manager in the terminal, themed to match |
 
 ---
 
@@ -249,7 +253,7 @@ branches, `aws --profile <Tab>` your profiles.
 | --- | ---- |
 | `→` / `End` | accept the grey autosuggestion (`Ctrl-→` = one word) |
 | `Tab` | fuzzy completion menu with previews |
-| `Ctrl-R` | fuzzy-search your entire command **history** |
+| `Ctrl-R` | search your entire command **history** ([atuin](https://atuin.sh): fuzzy, by host/session/folder; `Enter` edits, never runs) |
 | `Ctrl-T` | fuzzy-pick a **file** into the line (with a preview) |
 | `Alt-C` | fuzzy **`cd`** into a subfolder (with a tree preview) |
 | `Ctrl-/` | toggle the preview pane in any of the above |
@@ -293,7 +297,11 @@ Most terminal time is spent *locating* things — an old command, a file, a fold
 don't type the exact name, just a few letters *in order*, and it narrows as you go.
 
 - **`Ctrl-R` — "what was that command?"** Press it, type a fragment (`docker`, `ssh
-  prod`…), pick from the list, Enter. Beats scrolling `↑` fifty times.
+  prod`…), pick from the list, Enter puts it on the line to review. It's
+  [atuin](https://atuin.sh): every command from every shell and host, with when and where
+  you ran it; `Ctrl-R` again narrows to this host → session → folder. Lines that
+  start with a space, and anything that looks like a token or key, are never recorded.
+  `h` opens the same search by hand; `hstats` shows what you type most.
 - **`Ctrl-T` — "insert a file path."** Building a command and need a file? `Ctrl-T`,
   fuzzy-find it, and its path drops into your line — with a `bat` preview of the file.
 - **`Alt-C` — "cd somewhere."** Fuzzy-jump into any subfolder, tree preview included.
@@ -305,6 +313,7 @@ And the everyday commands are upgraded, too:
 
 | Instead of | You get | Which means |
 | ---------- | ------- | ----------- |
+| a file manager | [superfile](https://superfile.dev) (`spf`) | browse, preview, copy, move, rename in a two-pane TUI; `q` drops you in the folder you ended up in |
 | `ls` | [eza](https://github.com/eza-community/eza) | colours, icons, git status, `--tree` |
 | `cat` | [bat](https://github.com/sharkdp/bat) | syntax highlighting + line numbers |
 | `find` | [fd](https://github.com/sharkdp/fd) | simpler syntax, respects `.gitignore`, fast |
@@ -341,7 +350,8 @@ go, then press the command key. Here the prefix is **`Ctrl-b`** (the default). S
 
 | Key | Does |
 | --- | ---- |
-| `prefix` `f` | **sessionizer** — fuzzy-pick a project folder → jump to its session |
+| `prefix` `f` | **project picker** ([sesh](https://github.com/joshmedeski/sesh)) — running sessions + folders you've visited + declared projects, in a popup |
+| `prefix` `S` | flip back to the previous session |
 | `prefix` `\|` / `-` | split the pane **vertically / horizontally** (keeps the folder) |
 | `prefix` `h` `j` `k` `l` | move between panes (vim directions) |
 | `Alt` + arrow keys | move between panes **without** the prefix |
@@ -353,11 +363,14 @@ go, then press the command key. Here the prefix is **`Ctrl-b`** (the default). S
 
 > [!TIP]
 > **`prefix f` is the killer feature.** One key gives you *one tmux session per
-> project*: fuzzy-pick a folder and you're dropped into a session for it (created if
-> needed). It searches `~/code ~/projects ~/src ~/work ~/dev` by default — change that
-> with `export TMUX_SESSIONIZER_PATHS="$HOME/code $HOME/work"` in `~/.zshrc.local`. The
-> script ([`scripts/tmux-sessionizer.sh`](scripts/tmux-sessionizer.sh)) is also on your
-> `PATH`, so `tmux-sessionizer` works from any shell.
+> project*: pick a folder and you're dropped into a session for it (created if needed).
+> [sesh](https://github.com/joshmedeski/sesh) builds the list from your running tmux
+> sessions, every folder zoxide has seen you `cd` into, and projects you declare in
+> [`sesh/sesh.toml`](sesh/sesh.toml) (with a startup command and windows). `Ctrl-t` /
+> `Ctrl-x` / `Ctrl-g` filter the list, `Ctrl-d` kills a session. From the shell: `proj`
+> opens it, `proj api` jumps straight there. Where sesh isn't installed the key falls
+> back to the bundled [`tmux-sessionizer`](scripts/tmux-sessionizer.sh)
+> (`TMUX_SESSIONIZER_PATHS` picks its roots).
 
 <!-- -->
 
@@ -562,7 +575,7 @@ The 90% you'll use daily. Print it, screenshot it, forget the rest.
 
 | Shell | | tmux (prefix `Ctrl-b`) | | git / editor | |
 | --- | --- | --- | --- | --- | --- |
-| `Ctrl-R` | search history | `prefix f` | project switcher | `gs` | git status |
+| `Ctrl-R` | search history (atuin) | `prefix f` | project picker (sesh) | `gs` | git status |
 | `Ctrl-T` | pick a file | `prefix \|` `-` | split panes | `gd` | git diff (pretty) |
 | `Alt-C` | cd into a folder | `Alt`+arrows | move panes | `gl` | git log |
 | `Tab` | fuzzy complete | `prefix d` | detach (keep alive) | `lg` | **lazygit** (visual git) |
@@ -586,6 +599,8 @@ Tool-specific aliases only exist when the tool is installed.
 | `cat` | `bat --paging=never` (syntax-highlighted) |
 | `fd` | `fdfind` on Debian/Ubuntu (also powers fzf) |
 | `rgi` | `rg -i` (case-insensitive ripgrep) |
+| `spf` `fm` | superfile, the TUI file manager (cd-on-quit) |
+| `h` `hstats` | atuin: search history by hand · most-used commands |
 
 **Git** (`lg` → lazygit)
 
@@ -605,6 +620,7 @@ Tool-specific aliases only exist when the tool is installed.
 | `kg` `kd` | get · describe | `tf` | terraform |
 | `klo` | `logs -f` | `ap` | ansible-playbook |
 | `kx` | switch cluster | `t` `ta` `tls` | tmux · attach · list |
+| | | `proj [name]` `sl` | sesh picker / connect · list sessions |
 | `kns` | switch namespace | `sc` `scu` | systemctl · --user |
 | | | `jc` `jcu` | journalctl · --user |
 
@@ -752,6 +768,7 @@ cd ~/code/console && git pull && exec zsh   # add ./install.sh if a new tool was
 | Update | Command |
 | ------ | ------- |
 | zsh plugins | `zinit self-update && zinit update --all` |
+| tmux plugins | inside tmux: `prefix U` |
 | LazyVim plugins | open `nvim` → `:Lazy update` (then commit `nvim/lazy-lock.json`) |
 | CLI tools | your package manager (`apt upgrade`, `brew upgrade`, …) |
 | tldr pages | `tldr --update` |
@@ -804,10 +821,14 @@ Built to run on servers and privileged boxes — full details in
 ├── lazygit/config.yml      # lazygit (uses delta)    ->  ~/.config/lazygit/config.yml
 ├── tmux/tmux.conf          # tmux config             ->  ~/.config/tmux/tmux.conf
 ├── ghostty/config          # terminal preset (default) -> ~/.config/ghostty/config
+├── atuin/config.toml       # Ctrl-R history          ->  ~/.config/atuin/config.toml
+├── sesh/sesh.toml          # prefix f project picker  ->  ~/.config/sesh/sesh.toml
+├── superfile/config.toml   # spf file manager         ->  ~/.config/superfile/ (macOS: ~/Library/Application Support/superfile/)
 ├── alacritty/alacritty.toml # terminal preset        ->  ~/.config/alacritty/alacritty.toml
 ├── kitty/kitty.conf        # terminal preset         ->  ~/.config/kitty/kitty.conf
 ├── git/delta.gitconfig     # git-delta, included into ~/.gitconfig
 ├── scripts/
+│   ├── sesh-picker.sh      # prefix f (sesh, falls back to the sessionizer) -> ~/.local/bin/sesh-picker
 │   ├── tmux-sessionizer.sh # fzf project switcher    ->  ~/.local/bin/tmux-sessionizer
 │   ├── vendor-plugins.sh   # pre-seed plugins for offline hosts
 │   └── ci-*.sh             # CI: assert installs + uninstall reversibility

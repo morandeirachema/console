@@ -4,7 +4,7 @@
 #  Usage: ./install.sh [--dry-run] [--doctor] [--minimal] [--server] [--offline] [--xdg] [--no-nvim] [--no-fabric] [--no-ghostty] [--no-alacritty] [--no-kitty] [--no-font] [--no-chsh] [-y]
 #    --dry-run      show every package/symlink/change this run WOULD make — touch nothing
 #    --doctor       health check: report installed tools, symlinks, font, git config — then exit
-#    --minimal      only zsh + plugins + prompt (skip eza/bat/fd/rg/delta/tldr/lazygit/nvim/font)
+#    --minimal      only zsh + plugins + prompt (skip eza/bat/fd/rg/delta/tldr/lazygit/atuin/sesh/spf/nvim/font)
 #    --server       headless box: skip the Nerd Font + Ghostty (both live on your client)
 #    --offline      air-gapped: no internet fetches — packages must come from your mirror,
 #                   and skip the curl-installer fallbacks, release binaries, and font download
@@ -59,6 +59,11 @@ have() { command -v "$1" >/dev/null 2>&1; }
 dry()  { [ "$DRY" -eq 1 ]; }                     # true in --dry-run
 # run a mutating command, or (in dry-run) just print what it would do
 run()  { if dry; then info "[dry-run] $*"; else "$@"; fi; }
+# Ghostty's macOS cask ships an app bundle and (depending on the cask version) no PATH symlink —
+# treat the bundle as installed so --doctor and the install step don't fetch it twice.
+have_ghostty() { have ghostty || [ -d "/Applications/Ghostty.app" ] || [ -d "$HOME/Applications/Ghostty.app" ]; }
+# superfile reads its config from XDG on Linux but ~/Library/Application Support on macOS
+spf_cfg_dir() { if [ "$(uname -s)" = Darwin ]; then echo "$HOME/Library/Application Support/superfile"; else echo "${XDG_CONFIG_HOME:-$HOME/.config}/superfile"; fi; }
 sha256_of() { if have sha256sum; then sha256sum "$1" | awk '{print $1}'; else shasum -a 256 "$1" | awk '{print $1}'; fi; }
 # GitHub API calls, authenticated when a token is present (GITHUB_TOKEN/GH_TOKEN)
 # → lifts the 60-req/hour unauthenticated rate limit that bites on shared IPs / CI.
@@ -99,6 +104,102 @@ install_lazygit_release() {   # https://github.com/jesseduffield/lazygit
   fi
   tar xzf "$tmp/lg.tgz" -C "$tmp" lazygit || { rm -rf "$tmp"; return 1; }
   mkdir -p "$HOME/.local/bin"; install "$tmp/lazygit" "$HOME/.local/bin/lazygit"
+  rm -rf "$tmp"
+}
+
+install_atuin_release() {     # https://github.com/atuinsh/atuin/releases
+  local arch tmp ver want got asset
+  dry && { info "[dry-run] download + install atuin (GitHub release)"; return 0; }
+  case "$(uname -m)" in
+    x86_64)  arch="x86_64" ;;
+    aarch64) arch="aarch64" ;;
+    *) return 1 ;;
+  esac
+  tmp="$(mktemp -d)"
+  ver="$(gh_curl https://api.github.com/repos/atuinsh/atuin/releases/latest \
+         | sed -n 's/.*"tag_name": *"v\([^"]*\)".*/\1/p' | head -1)"
+  [ -n "$ver" ] || { rm -rf "$tmp"; return 1; }
+  asset="atuin-${arch}-unknown-linux-gnu.tar.gz"
+  curl -sSfL -o "$tmp/atuin.tgz" \
+    "https://github.com/atuinsh/atuin/releases/download/v${ver}/${asset}" \
+    || { rm -rf "$tmp"; return 1; }
+  # each asset ships a sibling .sha256 ("<hash>  <file>") — verify before trusting it
+  if curl -sSfL -o "$tmp/sum" \
+       "https://github.com/atuinsh/atuin/releases/download/v${ver}/${asset}.sha256"; then
+    want="$(awk '{print $1}' "$tmp/sum" | head -1)"
+    got="$(sha256_of "$tmp/atuin.tgz")"
+    if [ -n "$want" ] && [ "$want" != "$got" ]; then
+      warn "atuin checksum mismatch — refusing to install"; rm -rf "$tmp"; return 1
+    fi
+  else
+    warn "could not fetch atuin checksum — installing unverified"
+  fi
+  tar xzf "$tmp/atuin.tgz" -C "$tmp" || { rm -rf "$tmp"; return 1; }
+  mkdir -p "$HOME/.local/bin"
+  install "$(find "$tmp" -type f -name atuin | head -1)" "$HOME/.local/bin/atuin" || { rm -rf "$tmp"; return 1; }
+  rm -rf "$tmp"
+}
+
+install_sesh_release() {      # https://github.com/joshmedeski/sesh/releases
+  local arch tmp ver want got
+  dry && { info "[dry-run] download + install sesh (GitHub release)"; return 0; }
+  case "$(uname -m)" in
+    x86_64)  arch="Linux_x86_64" ;;
+    aarch64) arch="Linux_arm64" ;;
+    *) return 1 ;;
+  esac
+  tmp="$(mktemp -d)"
+  ver="$(gh_curl https://api.github.com/repos/joshmedeski/sesh/releases/latest \
+         | sed -n 's/.*"tag_name": *"v\([^"]*\)".*/\1/p' | head -1)"
+  [ -n "$ver" ] || { rm -rf "$tmp"; return 1; }
+  curl -sSfL -o "$tmp/sesh.tgz" \
+    "https://github.com/joshmedeski/sesh/releases/download/v${ver}/sesh_${arch}.tar.gz" \
+    || { rm -rf "$tmp"; return 1; }
+  if curl -sSfL -o "$tmp/sums" \
+       "https://github.com/joshmedeski/sesh/releases/download/v${ver}/sesh_${ver}_checksums.txt"; then
+    want="$(grep -E "  sesh_${arch}\.tar\.gz$" "$tmp/sums" | awk '{print $1}' | head -1)"
+    got="$(sha256_of "$tmp/sesh.tgz")"
+    if [ -n "$want" ] && [ "$want" != "$got" ]; then
+      warn "sesh checksum mismatch — refusing to install"; rm -rf "$tmp"; return 1
+    fi
+  else
+    warn "could not fetch sesh checksums — installing unverified"
+  fi
+  tar xzf "$tmp/sesh.tgz" -C "$tmp" sesh || { rm -rf "$tmp"; return 1; }
+  mkdir -p "$HOME/.local/bin"; install "$tmp/sesh" "$HOME/.local/bin/sesh"
+  rm -rf "$tmp"
+}
+
+install_superfile_release() { # https://github.com/yorukot/superfile/releases
+  local arch tmp ver want got asset bin
+  dry && { info "[dry-run] download + install superfile (GitHub release)"; return 0; }
+  case "$(uname -m)" in
+    x86_64)  arch="amd64" ;;
+    aarch64) arch="arm64" ;;
+    *) return 1 ;;
+  esac
+  tmp="$(mktemp -d)"
+  ver="$(gh_curl https://api.github.com/repos/yorukot/superfile/releases/latest \
+         | sed -n 's/.*"tag_name": *"v\([^"]*\)".*/\1/p' | head -1)"
+  [ -n "$ver" ] || { rm -rf "$tmp"; return 1; }
+  asset="superfile-linux-v${ver}-${arch}.tar.gz"
+  curl -sSfL -o "$tmp/spf.tgz" \
+    "https://github.com/yorukot/superfile/releases/download/v${ver}/${asset}" \
+    || { rm -rf "$tmp"; return 1; }
+  if curl -sSfL -o "$tmp/sums" \
+       "https://github.com/yorukot/superfile/releases/download/v${ver}/superfile-v${ver}-checksums.txt"; then
+    want="$(grep -F "$asset" "$tmp/sums" | awk '{print $1}' | head -1)"
+    got="$(sha256_of "$tmp/spf.tgz")"
+    if [ -n "$want" ] && [ "$want" != "$got" ]; then
+      warn "superfile checksum mismatch — refusing to install"; rm -rf "$tmp"; return 1
+    fi
+  else
+    warn "could not fetch superfile checksums — installing unverified"
+  fi
+  tar xzf "$tmp/spf.tgz" -C "$tmp" || { rm -rf "$tmp"; return 1; }
+  bin="$(find "$tmp" -type f -name spf | head -1)"
+  [ -n "$bin" ] || { rm -rf "$tmp"; return 1; }
+  mkdir -p "$HOME/.local/bin"; install "$bin" "$HOME/.local/bin/spf"
   rm -rf "$tmp"
 }
 
@@ -288,6 +389,11 @@ snapshot() {
     "${XDG_CONFIG_HOME:-$HOME/.config}/starship.toml"
     "${XDG_CONFIG_HOME:-$HOME/.config}/tmux/tmux.conf"
     "${XDG_CONFIG_HOME:-$HOME/.config}/ghostty/config"
+    "${XDG_CONFIG_HOME:-$HOME/.config}/atuin/config.toml"
+    "${XDG_CONFIG_HOME:-$HOME/.config}/sesh/sesh.toml"
+    "${XDG_CONFIG_HOME:-$HOME/.config}/superfile/config.toml"
+    "$HOME/Library/Application Support/superfile/config.toml"
+    "$HOME/.local/bin/sesh-picker"
     "${XDG_CONFIG_HOME:-$HOME/.config}/alacritty/alacritty.toml"
     "${XDG_CONFIG_HOME:-$HOME/.config}/kitty/kitty.conf"
     "${XDG_CONFIG_HOME:-$HOME/.config}/lazygit/config.yml"
@@ -342,7 +448,7 @@ doctor() {
   else dn "zinit not cloned yet (installs on first zsh launch)"; fi
 
   dh "CLI tools"
-  for t in fzf zoxide eza rg delta lazygit jq yq direnv carapace tmux pass fabric; do
+  for t in fzf zoxide eza rg delta lazygit atuin sesh spf jq yq direnv carapace tmux pass fabric; do
     have "$t" && dg "$t" || dn "$t missing"
   done
   # Debian/Ubuntu ship bat as `batcat` and fd as `fdfind`; count either as present.
@@ -357,7 +463,7 @@ doctor() {
     rm -rf "$nst"
   else dn "nvim missing"; fi
   have tree-sitter && dg "tree-sitter CLI" || dn "tree-sitter CLI missing (nvim can't build parsers)"
-  have ghostty && dg "ghostty" || do_ "ghostty not installed (optional; expected on servers)"
+  have_ghostty && dg "ghostty" || do_ "ghostty not installed (optional; expected on servers)"
   have alacritty && dg "alacritty" || do_ "alacritty not installed (optional; config still linked if you use it)"
   have kitty && dg "kitty" || do_ "kitty not installed (optional; config still linked if you use it)"
 
@@ -369,6 +475,10 @@ doctor() {
   dlink "$HOME/.local/bin/tmux-sessionizer" "scripts/tmux-sessionizer.sh"
   dlink "$HOME/.local/bin/nas-sync"         "scripts/nas-sync.sh"
   dlink "$cfg/ghostty/config"               "ghostty/config"
+  dlink "$cfg/atuin/config.toml"            "atuin/config.toml"
+  dlink "$cfg/sesh/sesh.toml"               "sesh/sesh.toml"
+  dlink "$(spf_cfg_dir)/config.toml"        "superfile/config.toml"
+  dlink "$HOME/.local/bin/sesh-picker"      "scripts/sesh-picker.sh"
   dlink "$cfg/alacritty/alacritty.toml"     "alacritty/alacritty.toml"
   dlink "$cfg/kitty/kitty.conf"             "kitty/kitty.conf"
   dlink "$cfg/lazygit/config.yml"           "lazygit/config.yml"
@@ -457,6 +567,33 @@ if [ "$MINIMAL" -eq 0 ]; then
     else install_lazygit_release || warn "lazygit failed — see https://github.com/jesseduffield/lazygit/releases"
     fi
   fi
+  # atuin — shell history database (Ctrl-R). Packaged on brew/Arch/Fedora; release binary elsewhere.
+  if ! have atuin; then
+    info "Installing atuin…"
+    if pkg_install atuin; then :
+    elif [ "$OFFLINE" -eq 1 ]; then warn "offline: install atuin from your mirror"
+    elif [ "$PM" = brew ]; then warn "atuin brew install failed — see https://atuin.sh"
+    else install_atuin_release || warn "atuin failed — see https://github.com/atuinsh/atuin/releases"
+    fi
+  fi
+  # sesh — tmux session manager behind prefix+f (brew; release binary on Linux — AUR only otherwise)
+  if ! have sesh; then
+    info "Installing sesh…"
+    if pkg_install sesh; then :
+    elif [ "$OFFLINE" -eq 1 ]; then warn "offline: install sesh from your mirror"
+    elif [ "$PM" = brew ]; then warn "sesh brew install failed — see https://github.com/joshmedeski/sesh"
+    else install_sesh_release || warn "sesh failed — prefix+f falls back to tmux-sessionizer"
+    fi
+  fi
+  # superfile (spf) — TUI file manager (brew; release binary on Linux)
+  if ! have spf; then
+    info "Installing superfile…"
+    if pkg_install superfile; then :
+    elif [ "$OFFLINE" -eq 1 ]; then warn "offline: install superfile from your mirror"
+    elif [ "$PM" = brew ]; then warn "superfile brew install failed — see https://superfile.dev"
+    else install_superfile_release || warn "superfile failed — see https://github.com/yorukot/superfile/releases"
+    fi
+  fi
   # jq / yq — JSON & YAML processing (ops staples)
   have jq || { info "Installing jq…"; pkg_install jq || warn "jq failed"; }
   have yq || { info "Installing yq…"; pkg_install yq || warn "yq not packaged — see https://github.com/mikefarah/yq"; }
@@ -502,7 +639,7 @@ if [ "$MINIMAL" -eq 0 ]; then
   # ghostty — GPU-accelerated, platform-native terminal (client-side; skipped by --server/--no-ghostty)
   # Packaged officially on Arch and Fedora 42+; Debian/Ubuntu/openSUSE have no official package,
   # so the warn fallback points at the download page instead of piping an installer.
-  if [ "$NO_GHOSTTY" -eq 0 ] && ! have ghostty; then
+  if [ "$NO_GHOSTTY" -eq 0 ] && ! have_ghostty; then
     info "Installing ghostty…"
     if [ "$PM" = brew ]; then
       run brew install --cask ghostty || warn "ghostty cask failed — see https://ghostty.org/download"
@@ -653,6 +790,11 @@ link "$REPO_DIR/starship/starship.toml"  "$HOME/.config/starship.toml"
 # tmux-sessionizer helper on PATH (bound to prefix+f in tmux.conf)
 [ "$MINIMAL" -eq 0 ] && { dry || mkdir -p "$HOME/.local/bin"; \
   link "$REPO_DIR/scripts/tmux-sessionizer.sh" "$HOME/.local/bin/tmux-sessionizer"; }
+# sesh: config + the prefix+f picker (falls back to tmux-sessionizer without sesh)
+[ "$MINIMAL" -eq 0 ] && { link "$REPO_DIR/sesh/sesh.toml" "$HOME/.config/sesh/sesh.toml"; \
+  link "$REPO_DIR/scripts/sesh-picker.sh" "$HOME/.local/bin/sesh-picker"; }
+# superfile config (location differs per OS — see spf_cfg_dir)
+[ "$MINIMAL" -eq 0 ] && link "$REPO_DIR/superfile/config.toml" "$(spf_cfg_dir)/config.toml"
 # nas-sync helper on PATH (rsync backups/pass → a NAS; set NAS_DEST in ~/.zshrc.local)
 [ "$MINIMAL" -eq 0 ] && link "$REPO_DIR/scripts/nas-sync.sh" "$HOME/.local/bin/nas-sync"
 # ghostty config (client-side terminal; skipped by --minimal/--server/--no-ghostty)
@@ -661,6 +803,14 @@ link "$REPO_DIR/starship/starship.toml"  "$HOME/.config/starship.toml"
 # alacritty config (linked whether or not alacritty is installed; skipped by --minimal/--server/--no-alacritty)
 [ "$MINIMAL" -eq 0 ] && [ "$NO_ALACRITTY" -eq 0 ] && \
   link "$REPO_DIR/alacritty/alacritty.toml" "$HOME/.config/alacritty/alacritty.toml"
+# atuin config + one-time import of the history you already have (skipped by --minimal)
+if [ "$MINIMAL" -eq 0 ]; then
+  link "$REPO_DIR/atuin/config.toml" "$HOME/.config/atuin/config.toml"
+  if have atuin && [ ! -s "${XDG_DATA_HOME:-$HOME/.local/share}/atuin/history.db" ]; then
+    info "Importing existing shell history into atuin (one time)…"
+    run atuin import auto >/dev/null 2>&1 || warn "atuin import failed — run: atuin import auto"
+  fi
+fi
 # kitty config (linked whether or not kitty is installed; skipped by --minimal/--server/--no-kitty)
 [ "$MINIMAL" -eq 0 ] && [ "$NO_KITTY" -eq 0 ] && \
   link "$REPO_DIR/kitty/kitty.conf" "$HOME/.config/kitty/kitty.conf"

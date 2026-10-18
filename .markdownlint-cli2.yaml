@@ -11,6 +11,10 @@ config:
 
   # README.md opens with a centered <div> header and uses <details> collapsibles
   # throughout — deliberate GitHub presentation, not stray markup.
+  # CHANGELOG.md repeats Added/Changed/Fixed under every date — only flag duplicates among siblings.
+  MD024:
+    siblings_only: true
+
   MD033: false   # no-inline-html
   # ...which also means line 1 is that <div>, not an h1.
   MD041: false   # first-line-heading

@@ -120,7 +120,7 @@ zstyle ':completion:*:descriptions' format '[%d]'
 zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza -1 --color=always --icons=auto "$realpath" 2>/dev/null || ls -1 --color=always "$realpath"'
 
 # ------------------------------------------------------------
-#  fzf — fuzzy finder (Ctrl-R history, Ctrl-T files, Alt-C cd)
+#  fzf — fuzzy finder (Ctrl-T files, Alt-C cd; Ctrl-R history only until atuin loads below)
 #  https://github.com/junegunn/fzf
 # ------------------------------------------------------------
 if command -v fzf >/dev/null; then
@@ -136,6 +136,15 @@ if command -v fzf >/dev/null; then
     unset _f
   fi
 fi
+
+# ------------------------------------------------------------
+#  atuin — shell history as a searchable database (Ctrl-R).
+#  Loaded AFTER fzf so atuin's Ctrl-R replaces fzf's; Ctrl-T / Alt-C stay fzf.
+#  --disable-up-arrow keeps Up/Down with history-substring-search.
+#  Config: atuin/config.toml (no network at startup; sync is opt-in).
+#  https://atuin.sh
+# ------------------------------------------------------------
+command -v atuin >/dev/null && eval "$(atuin init zsh --disable-up-arrow)"
 
 # history-substring-search keys (Up/Down + Ctrl-P/N) are bound in the
 # plugin's atload hook above — in turbo mode the widget only exists
