@@ -17,7 +17,8 @@ still worth doing. Priority: **P1 = do next**, P2 = nice, P3 = later.
 - **Prompt tells you WHERE you are** — `user@host` shows over SSH (root in red),
   and Kubernetes context + AWS profile/region show when set. Prevents
   "ran it on the wrong box / wrong cluster / wrong account".
-- **`--server`** flag skips the Nerd Font on headless boxes.
+- **`--server`** flag skips the Nerd Font and every terminal config on headless boxes
+  (WSL does the same automatically).
 - **Cross-platform** installer (Linux apt/dnf/pacman/zypper + macOS Homebrew).
 - **CI** — GitHub Actions: shellcheck + `bash -n`/`zsh -n` + toml/gitconfig/lua
   validation, and a smoke test that runs `./install.sh --minimal` in
@@ -67,8 +68,9 @@ still worth doing. Priority: **P1 = do next**, P2 = nice, P3 = later.
 Ideas taken from three Mischa van den Burg videos (see
 [`IDEAS-FROM-VIDEOS.md`](IDEAS-FROM-VIDEOS.md)):
 
-- **tmux-sessionizer** — `prefix f` fzf-jumps to a project as a tmux session
+- **tmux-sessionizer** — fzf-jumps to a project as a tmux session
   (`scripts/tmux-sessionizer.sh`, on `PATH`; roots via `TMUX_SESSIONIZER_PATHS`).
+  Since 2026-10 `prefix f` runs `sesh-picker`, which falls back to this script.
 - **fabric** — AI patterns as Unix filters; SHA256-verified release installer +
   `--no-fabric` gate; keys stay in `~/.zshrc.local` (`fab`/`fsum`/`fexplain`/`ytsum`).
 - **pass** — GPG-encrypted password store (`pw`/`pwc`/`passf`); documented in `SECURITY.md`.
@@ -76,11 +78,11 @@ Ideas taken from three Mischa van den Burg videos (see
   fzf-tab, `Ctrl-/` toggles the preview. Uses colon preview-window syntax so it
   never errors on old fzf (< 0.28), verified against fzf 0.24 / 0.29 / 0.67.
 - **CI now covers the extras path** — a non-minimal `extras` job installs
-  pass/fabric/tmux-sessionizer/alacritty on Ubuntu/Fedora/Arch and asserts them via
-  `scripts/ci-extras-check.sh` (fabric + alacritty binaries are soft checks).
+  pass/fabric/tmux-sessionizer and the terminal presets on Ubuntu/Fedora/Arch and
+  asserts them via `scripts/ci-extras-check.sh` (fabric + ghostty binaries are soft checks).
 - **Alacritty** (P2) — `alacritty/alacritty.toml`, Catppuccin Mocha + JetBrainsMono
-  Nerd Font, symlinked; installed by default on desktops, skipped by
-  `--server`/`--no-alacritty`. Removes the manual "set your terminal font" step.
+  Nerd Font, symlinked. Was installed by default until 2026-10; now link-only (Ghostty
+  is the installed terminal), skipped by `--server`/`--no-alacritty`.
 
 ## ✅ Done (hardening pass)
 
@@ -88,7 +90,8 @@ Ideas taken from three Mischa van den Burg videos (see
   asserts (via `scripts/ci-uninstall-check.sh`) that every symlink is gone, on
   Ubuntu/Fedora/Arch. Protects the "reversible" guarantee against regressions.
 - **Authenticated GitHub API** — the release-binary version lookups
-  (lazygit/carapace/fabric) use `GITHUB_TOKEN`/`GH_TOKEN` when present to avoid the
+  (lazygit, carapace, fabric, neovim, tree-sitter, atuin, sesh, superfile)
+  use `GITHUB_TOKEN`/`GH_TOKEN` when present to avoid the
   anonymous rate limit; CI passes a least-privilege (`contents: read`) token.
 - **`--dry-run`** — prints every package/symlink/change a run would make and
   touches nothing (verified: zero filesystem writes in an isolated `$HOME`).
@@ -129,6 +132,17 @@ Ideas taken from three Mischa van den Burg videos (see
 - **`MANUAL.md`** with real screenshots (`docs/screenshots/`, captured headless via
   tmux → ANSI → HTML → Chrome, see CLAUDE.md) and **`CHANGELOG.md`**; repo renamed
   `zsh` → `console`.
+- **WSL support** — install.sh detects WSL, skips the Linux font and terminal presets,
+  installs a Windows Terminal fragment (`windows-terminal/console.json`: Catppuccin scheme
+  and a "console (WSL)" profile with the Nerd Font); WSL-only `open`/`pbcopy`/`pbpaste`/`winhome`.
+- **Review pass after the terminal work** (two independent reviews): `~/.local/bin` on
+  install.sh's own PATH (release fallbacks were invisible to the same run and to CI);
+  `atuin import zsh` instead of `auto` (install runs from bash); `--disable-ai` for atuin;
+  every config link honours `XDG_CONFIG_HOME`; `uninstall.sh` removes the `--xdg`
+  ZDOTDIR line; Nerd Font zip SHA256-verified; `pacman -Syu --needed` (no partial
+  upgrades); `Ctrl-→`/`Ctrl-←` bound; `prefix f` guarded when the picker is missing;
+  sesh-picker explains a missing fzf and works without fzf-tmux; docs corrected
+  (`--minimal`/`--server` wording, superfile keys, atuin Tab, ZINIT_PIN location).
 
 - **Ghostty is the default terminal** — `ghostty/config` (Catppuccin Mocha + JetBrainsMono
   Nerd Font, explicit palette so it stays byte-identical to the Alacritty/kitty presets),
@@ -161,8 +175,9 @@ Ideas taken from three Mischa van den Burg videos (see
 ## Future ideas
 
 - Full byte-reproducible plugin lockfile (see *P1 — last mile*).
-- Pin release-binary versions (fabric/lazygit/neovim/carapace fetch `latest`) for
-  reproducibility, mirroring `ZINIT_PIN`.
+- Pin release-binary versions (fabric/lazygit/neovim/carapace/atuin/sesh/superfile/tree-sitter
+  fetch `latest`) for reproducibility, mirroring `ZINIT_PIN`.
+- Pin the tmux plugins (tpm/resurrect/continuum are cloned from `main`) the same way.
 - **All video-idea P1/P2 items are done** (see [`IDEAS-FROM-VIDEOS.md`](IDEAS-FROM-VIDEOS.md)):
   fabric · pass · tmux-sessionizer · fzf previews · Alacritty · SSH port-forward
   helpers · **NAS sync** (`nas-sync` rsyncs `~/backup` + the `pass` store to a

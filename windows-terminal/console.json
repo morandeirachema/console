@@ -1,0 +1,44 @@
+{
+  "$help": "https://aka.ms/terminal-documentation",
+  "$schema": "https://aka.ms/terminal-profiles-schema",
+  "//": "Windows Terminal fragment installed by install.sh on WSL into %LOCALAPPDATA%\\Microsoft\\Windows Terminal\\Fragments\\console\\. Adds a colour scheme and a 'console (WSL)' profile; your own settings.json is never edited. Font: install JetBrainsMono Nerd Font on Windows (winget install DEVCOM.JetBrainsMonoNerdFont).",
+  "schemes": [
+    {
+      "name": "Catppuccin Mocha (console)",
+      "background": "#1E1E2E",
+      "foreground": "#CDD6F4",
+      "cursorColor": "#F5E0DC",
+      "selectionBackground": "#F5E0DC",
+      "black": "#45475A",
+      "red": "#F38BA8",
+      "green": "#A6E3A1",
+      "yellow": "#F9E2AF",
+      "blue": "#89B4FA",
+      "purple": "#F5C2E7",
+      "cyan": "#94E2D5",
+      "white": "#BAC2DE",
+      "brightBlack": "#585B70",
+      "brightRed": "#F38BA8",
+      "brightGreen": "#A6E3A1",
+      "brightYellow": "#F9E2AF",
+      "brightBlue": "#89B4FA",
+      "brightPurple": "#F5C2E7",
+      "brightCyan": "#94E2D5",
+      "brightWhite": "#A6ADC8"
+    }
+  ],
+  "profiles": [
+    {
+      "name": "console (WSL)",
+      "commandline": "wsl.exe ~",
+      "colorScheme": "Catppuccin Mocha (console)",
+      "font": { "face": "JetBrainsMono Nerd Font", "size": 12 },
+      "padding": "10",
+      "opacity": 98,
+      "useAcrylic": false,
+      "cursorShape": "filledBox",
+      "historySize": 50000,
+      "scrollbarState": "hidden"
+    }
+  ]
+}

@@ -8,6 +8,8 @@
 #
 #   ^a all   ^t tmux sessions   ^g configured   ^x zoxide dirs   ^d kill session
 set -euo pipefail
+# tmux run-shell inherits the server's PATH, which may predate this shell — make ~/.local/bin visible
+export PATH="$HOME/.local/bin:$PATH"
 
 if ! command -v sesh >/dev/null 2>&1; then
   fallback="$HOME/.local/bin/tmux-sessionizer"
@@ -18,11 +20,20 @@ fi
 # direct connect: proj <name>
 [ "$#" -ge 1 ] && exec sesh connect "$*"
 
-# inside tmux without a TTY (run-shell from the keybinding) → fzf-tmux popup;
-# from a shell → plain fzf.
-if [ -n "${TMUX:-}" ] && command -v fzf-tmux >/dev/null 2>&1; then
-  # shellcheck disable=SC2054  # the comma is fzf-tmux's own width,height syntax
-  fzf=(fzf-tmux -p 80%,70%)
+if ! command -v fzf >/dev/null 2>&1; then
+  msg="sesh-picker: fzf is required (./install.sh installs it)"
+  if [ -n "${TMUX:-}" ]; then tmux display-message "$msg"; else echo "$msg" >&2; fi
+  exit 1
+fi
+# inside tmux without a TTY (run-shell from the keybinding) → a popup: fzf-tmux if present,
+# else re-run ourselves inside display-popup, which hands us a TTY; from a shell → plain fzf.
+if [ -n "${TMUX:-}" ] && [ ! -t 0 ]; then
+  if command -v fzf-tmux >/dev/null 2>&1; then
+    # shellcheck disable=SC2054  # the comma is fzf-tmux's own width,height syntax
+    fzf=(fzf-tmux -p 80%,70%)
+  else
+    exec tmux display-popup -E -w 80% -h 70% "$0" "$@"
+  fi
 else
   fzf=(fzf --height=70% --reverse)
 fi

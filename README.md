@@ -139,8 +139,8 @@ already zsh, so it isn't changed; the font is installed via `brew --cask`.
 | ---- | ------ |
 | `--dry-run` | print every package/symlink/change the run **would** make — touch nothing |
 | `--doctor` | health check: report tools, symlinks, font, git config — then exit |
-| `--minimal` | zsh + plugins + prompt only (skip the extra CLI tools, nvim, font) |
-| `--server` | headless box: skip the Nerd Font **and** Ghostty (both live on your client) |
+| `--minimal` | zsh + plugins + prompt + fzf/bat/fd/rg only (skip eza, delta, tldr, lazygit, atuin, sesh, spf, tmux, nvim, terminals, font) |
+| `--server` | headless box: skip the Nerd Font **and** every terminal config (they live on your client) |
 | `--offline` | air-gapped: no internet fetches — packages come from your mirror |
 | `--xdg` | put `.zshrc` under `ZDOTDIR=~/.config/zsh` to keep `$HOME` tidy |
 | `--no-nvim` | don't install Neovim/LazyVim or touch `~/.config/nvim` |
@@ -202,7 +202,9 @@ Read top to bottom the first time, or jump to what you need:
 **[SSH tunnels](#-ssh-tunnels-port-forwarding)** ·
 **[git](#-git-without-the-pain)** ·
 **[Neovim](#-neovim-modal-editing-gently)** ·
-**[AI & passwords](#-ai-and-passwords)**
+**[AI & passwords](#-ai-and-passwords)** ·
+**[Terminal](#️-terminal-ghostty--alacritty--kitty)** ·
+**[Windows (WSL)](#-windows-wsl)**
 
 ---
 
@@ -212,7 +214,7 @@ Read top to bottom the first time, or jump to what you need:
 that make it feel like it's helping you:
 
 - **Autosuggestions** — as you type, the rest of a command you've run before appears
-  in **grey**. Press **`→`** (or `End`) to accept it, `Ctrl-→` to accept one word.
+  in **grey**. Press **`→`** (or `End`) to accept it, `Ctrl-→` or `Alt-F` to accept one word.
   You'll re-type far less.
 - **Syntax highlighting** — a valid command turns **green**, an unknown one **red**,
   *before* you press Enter. Red = typo. Catch mistakes early.
@@ -251,7 +253,7 @@ branches, `aws --profile <Tab>` your profiles.
 
 | Key | Does |
 | --- | ---- |
-| `→` / `End` | accept the grey autosuggestion (`Ctrl-→` = one word) |
+| `→` / `End` | accept the grey autosuggestion (`Ctrl-→` / `Alt-F` = one word) |
 | `Tab` | fuzzy completion menu with previews |
 | `Ctrl-R` | search your entire command **history** ([atuin](https://atuin.sh): fuzzy, by host/session/folder; `Enter` edits, never runs) |
 | `Ctrl-T` | fuzzy-pick a **file** into the line (with a preview) |
@@ -376,8 +378,7 @@ go, then press the command key. Here the prefix is **`Ctrl-b`** (the default). S
 
 > [!IMPORTANT]
 > **Sessions survive reboots.** Via [tmux-resurrect](https://github.com/tmux-plugins/tmux-resurrect)
->
-> - [tmux-continuum](https://github.com/tmux-plugins/tmux-continuum), layouts auto-save
+> and [tmux-continuum](https://github.com/tmux-plugins/tmux-continuum), layouts auto-save
 > every 15 min and restore on start (`prefix Ctrl-s` / `prefix Ctrl-r` to do it by
 > hand). Pane *contents* are deliberately **not** saved, so scrollback secrets never
 > hit disk.
@@ -564,6 +565,40 @@ at *JetBrainsMono Nerd Font*.
 > copies the terminfo over on first connect (or falls back to `xterm-256color`) and
 > `clear`, `tmux` and `less` keep working on every box. None of this makes Ghostty your
 > OS-level default terminal — launch it like any other app.
+
+### 🪟 Windows (WSL)
+
+`console` is a Linux/macOS shell, so on Windows it runs inside **WSL2** (Ubuntu by
+default). Inside WSL it is just Ubuntu: the same clone + `./install.sh`, and the
+installer notices WSL by itself:
+
+```powershell
+wsl --install -d Ubuntu          # once, from PowerShell as admin; then open "Ubuntu"
+winget install DEVCOM.JetBrainsMonoNerdFont   # the Nerd Font — fonts live on the Windows side
+```
+
+```bash
+git clone https://github.com/morandeirachema/console.git ~/code/console
+cd ~/code/console && ./install.sh && exec zsh
+```
+
+What differs under WSL (all automatic):
+
+- The **font download and the terminal presets are skipped** — Windows Terminal is
+  your terminal, and fonts are installed on Windows (the `winget` line above).
+- A **Windows Terminal fragment** is dropped into
+  `%LOCALAPPDATA%\Microsoft\Windows Terminal\Fragments\console\`: it adds the
+  *Catppuccin Mocha (console)* colour scheme and a **"console (WSL)"** profile with the
+  Nerd Font, padding and cursor already set. Restart Windows Terminal and pick that
+  profile (or set the scheme + font on your existing Ubuntu profile). Your own
+  `settings.json` is never edited.
+- Extra shell helpers exist only inside WSL: `open <path>` opens it in Explorer,
+  `pbcopy` / `pbpaste` talk to the Windows clipboard, `winhome` jumps to
+  `C:\Users\<you>`. tmux copy-mode already reaches the Windows clipboard via OSC 52.
+- `./install.sh --doctor` reminds you about the Windows-side font.
+
+Everything else — atuin, sesh, superfile, lazygit, Neovim, the prompt — is unchanged.
+Native PowerShell or Git Bash are **not** supported.
 
 ---
 
@@ -791,7 +826,7 @@ Built to run on servers and privileged boxes — full details in
 | **Secrets in history** | leading-space commands aren't saved (`HIST_IGNORE_SPACE`) |
 | **Secrets in the repo** | machine config lives in git-ignored `~/.zshrc.local` |
 | **Completion injection** | `compinit -i` keeps the security check, skips insecure dirs (never `-C`) |
-| **Supply chain** | packages first; `curl \| sh` only a labelled fallback; lazygit/neovim/carapace/fabric binaries **SHA256-verified** |
+| **Supply chain** | packages first; `curl \| sh` only a labelled fallback; every release download (lazygit, neovim, carapace, fabric, atuin, sesh, superfile, tree-sitter, the Nerd Font) **SHA256-verified** |
 | **Reproducibility** | `nvim/lazy-lock.json`, `ZINIT_PIN`, `--offline`, `scripts/vendor-plugins.sh` |
 | **Auditability** | every run logs to `~/.local/state/console/install-<ts>.log` |
 | **Reversibility** | one dated pre-change backup + `./uninstall.sh` |
@@ -810,8 +845,9 @@ Built to run on servers and privileged boxes — full details in
 
 ```text
 .
-├── install.sh              # idempotent bootstrap (Linux + macOS) — also --dry-run / --doctor
-├── uninstall.sh            # reverse the symlinks + git include
+├── install.sh              # idempotent bootstrap (Linux, macOS, WSL) — also --dry-run / --doctor
+├── uninstall.sh            # reverse the symlinks + git include (+ the --xdg ZDOTDIR line)
+├── bootstrap.sh            # fetch-read-run: installs git, clones, hands off to install.sh
 ├── zsh/
 │   ├── .zshrc              # main shell config      ->  ~/.zshrc
 │   ├── aliases.zsh         # aliases (sourced by .zshrc)
@@ -826,14 +862,18 @@ Built to run on servers and privileged boxes — full details in
 ├── superfile/config.toml   # spf file manager         ->  ~/.config/superfile/ (macOS: ~/Library/Application Support/superfile/)
 ├── alacritty/alacritty.toml # terminal preset        ->  ~/.config/alacritty/alacritty.toml
 ├── kitty/kitty.conf        # terminal preset         ->  ~/.config/kitty/kitty.conf
+├── windows-terminal/console.json  # WSL: Windows Terminal scheme + profile fragment
 ├── git/delta.gitconfig     # git-delta, included into ~/.gitconfig
 ├── scripts/
 │   ├── sesh-picker.sh      # prefix f (sesh, falls back to the sessionizer) -> ~/.local/bin/sesh-picker
 │   ├── tmux-sessionizer.sh # fzf project switcher    ->  ~/.local/bin/tmux-sessionizer
+│   ├── nas-sync.sh         # rsync backups to a NAS  ->  ~/.local/bin/nas-sync
 │   ├── vendor-plugins.sh   # pre-seed plugins for offline hosts
 │   └── ci-*.sh             # CI: assert installs + uninstall reversibility
+├── docs/screenshots/       # real captures used by MANUAL.md
 ├── .github/workflows/ci.yml    # shellcheck + multi-distro install/uninstall smoke tests
-├── CLAUDE.md · SECURITY.md · ROADMAP.md
+├── .markdownlint-cli2.yaml # docs lint config (CI + editor)
+├── MANUAL.md · CHANGELOG.md · SECURITY.md · ROADMAP.md · IDEAS-FROM-VIDEOS.md · CLAUDE.md
 └── README.md
 ```
 

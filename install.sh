@@ -4,8 +4,8 @@
 #  Usage: ./install.sh [--dry-run] [--doctor] [--minimal] [--server] [--offline] [--xdg] [--no-nvim] [--no-fabric] [--no-ghostty] [--no-alacritty] [--no-kitty] [--no-font] [--no-chsh] [-y]
 #    --dry-run      show every package/symlink/change this run WOULD make — touch nothing
 #    --doctor       health check: report installed tools, symlinks, font, git config — then exit
-#    --minimal      only zsh + plugins + prompt (skip eza/bat/fd/rg/delta/tldr/lazygit/atuin/sesh/spf/nvim/font)
-#    --server       headless box: skip the Nerd Font + Ghostty (both live on your client)
+#    --minimal      zsh + plugins + prompt + fzf/bat/fd/rg only (skip eza/delta/tldr/lazygit/atuin/sesh/spf/tmux/nvim/terminals/font)
+#    --server       headless box: skip the Nerd Font + all terminal configs (they live on your client)
 #    --offline      air-gapped: no internet fetches — packages must come from your mirror,
 #                   and skip the curl-installer fallbacks, release binaries, and font download
 #    --xdg          XDG layout: put .zshrc under ZDOTDIR=~/.config/zsh (keeps $HOME tidy)
@@ -25,6 +25,9 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 LOGDIR="${XDG_STATE_HOME:-$HOME/.local/state}/console"
 LOGFILE="$LOGDIR/install-$STAMP.log"   # audit trail of everything this run changed
 BACKUP_DIR="$HOME/backup/zsh/$STAMP"   # consolidated snapshot of configs this run replaces (visible path)
+CFG="${XDG_CONFIG_HOME:-$HOME/.config}" # every config symlink honours XDG_CONFIG_HOME, like the tools do
+# release-binary fallbacks install into ~/.local/bin; .zshrc adds it for the shell, this run needs it too
+export PATH="$HOME/.local/bin:$PATH"
 NO_FONT=0; NO_CHSH=0; MINIMAL=0; NO_NVIM=0; NO_FABRIC=0; NO_GHOSTTY=0; NO_ALACRITTY=0; NO_KITTY=0; OFFLINE=0; XDG=0; DRY=0; DOCTOR=0
 
 for a in "$@"; do
@@ -47,6 +50,11 @@ for a in "$@"; do
     *) echo "unknown option: $a"; exit 1;;
   esac
 done
+# WSL: the terminal, its font and the clipboard live on the Windows side — treat it like
+# --server for those pieces, and drop a Windows Terminal scheme/profile fragment instead.
+IS_WSL=0
+if [ -r /proc/version ] && grep -qi microsoft /proc/version 2>/dev/null; then IS_WSL=1; fi
+[ "$IS_WSL" -eq 1 ] && { NO_FONT=1; NO_GHOSTTY=1; NO_ALACRITTY=1; NO_KITTY=1; }
 # Create the audit-log dir only for a real run (dry-run / doctor change nothing).
 [ "$DRY" -eq 1 ] || [ "$DOCTOR" -eq 1 ] || mkdir -p "$LOGDIR" 2>/dev/null || true
 
@@ -62,6 +70,22 @@ run()  { if dry; then info "[dry-run] $*"; else "$@"; fi; }
 # Ghostty's macOS cask ships an app bundle and (depending on the cask version) no PATH symlink —
 # treat the bundle as installed so --doctor and the install step don't fetch it twice.
 have_ghostty() { have ghostty || [ -d "/Applications/Ghostty.app" ] || [ -d "$HOME/Applications/Ghostty.app" ]; }
+# WSL: install the Windows Terminal fragment (Catppuccin scheme + a "console (WSL)" profile with the
+# Nerd Font) into %LOCALAPPDATA%\Microsoft\Windows Terminal\Fragments\console\. Fragments are additive
+# and never touch the user's own settings.json. Everything is guarded — a missing cmd.exe just skips it.
+wsl_terminal_fragment() {
+  local lad dir
+  have cmd.exe && have wslpath || return 0
+  lad="$(cmd.exe /c 'echo %LOCALAPPDATA%' 2>/dev/null | tr -d '\r')"
+  [ -n "$lad" ] || return 0
+  dir="$(wslpath -u "$lad" 2>/dev/null)/Microsoft/Windows Terminal/Fragments/console"
+  if dry; then info "[dry-run] copy windows-terminal/console.json → $dir/console.json"; return 0; fi
+  mkdir -p "$dir" 2>/dev/null || { warn "Windows Terminal fragment: cannot write $dir"; return 0; }
+  if cp "$REPO_DIR/windows-terminal/console.json" "$dir/console.json" 2>/dev/null; then
+    ok "Windows Terminal: 'console (WSL)' profile + Catppuccin scheme installed (restart Windows Terminal)"
+    log "wrote $dir/console.json"
+  else warn "Windows Terminal fragment: copy failed"; fi
+}
 # superfile reads its config from XDG on Linux but ~/Library/Application Support on macOS
 spf_cfg_dir() { if [ "$(uname -s)" = Darwin ]; then echo "$HOME/Library/Application Support/superfile"; else echo "${XDG_CONFIG_HOME:-$HOME/.config}/superfile"; fi; }
 sha256_of() { if have sha256sum; then sha256sum "$1" | awk '{print $1}'; else shasum -a 256 "$1" | awk '{print $1}'; fi; }
@@ -371,7 +395,7 @@ pkg_install() {
     brew)   brew install "$@";;
     apt)    $SUDO apt-get install -y "$@";;
     dnf)    $SUDO dnf install -y "$@";;
-    pacman) $SUDO pacman -S --noconfirm "$@";;
+    pacman) $SUDO pacman -Syu --needed --noconfirm "$@";;
     zypper) $SUDO zypper install -y "$@";;
     *) return 1;;
   esac
@@ -485,6 +509,7 @@ doctor() {
   dlink "$cfg/nvim"                         "nvim"
 
   dh "Font & git"
+  [ "$IS_WSL" -eq 1 ] && do_ "WSL: the Nerd Font must be installed on Windows (winget install DEVCOM.JetBrainsMonoNerdFont) and set in Windows Terminal"
   if have fc-list; then
     # grep -c (reads all input) — NOT grep -q, which exits early and can SIGPIPE
     # fc-list on a big font list under `pipefail`, giving a false "not found".
@@ -511,6 +536,7 @@ doctor() {
 if [ "$DOCTOR" -eq 1 ]; then set +e; doctor; exit 0; fi
 
 info "Repo:            $REPO_DIR"
+[ "$IS_WSL" -eq 1 ] && info "WSL detected:    Nerd Font + terminal live on Windows — see README › Windows (WSL)"
 info "Package manager: ${PM:-none detected}"
 [ "$OFFLINE" -eq 1 ] && info "Offline mode: no internet fetches (packages assumed from your mirror)."
 
@@ -733,9 +759,19 @@ if [ "$NO_FONT" -eq 0 ]; then
     mkdir -p "$FONT_DIR"; tmp="$(mktemp -d)"
     if curl -sSfL -o "$tmp/JBM.zip" \
         https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip; then
-      unzip -oq "$tmp/JBM.zip" -d "$FONT_DIR"
-      fc-cache -f >/dev/null 2>&1 || true
-      ok "Font installed — set your terminal font to 'JetBrainsMono Nerd Font'."
+      # nerd-fonts publishes SHA-256.txt per release — verify like the other downloads
+      want=""; got="$(sha256_of "$tmp/JBM.zip")"
+      if curl -sSfL -o "$tmp/SHA-256.txt" \
+          https://github.com/ryanoasis/nerd-fonts/releases/latest/download/SHA-256.txt; then
+        want="$(grep -E 'JetBrainsMono\.zip$' "$tmp/SHA-256.txt" | awk '{print $1}' | head -1)"
+      else warn "could not fetch the font checksums — installing unverified"; fi
+      if [ -n "$want" ] && [ "$want" != "$got" ]; then
+        warn "Nerd Font checksum mismatch — refusing to install (rerun, or --no-font)"
+      else
+        unzip -oq "$tmp/JBM.zip" -d "$FONT_DIR"
+        fc-cache -f >/dev/null 2>&1 || true
+        ok "Font installed — set your terminal font to 'JetBrainsMono Nerd Font'."
+      fi
     else
       warn "font download failed; rerun with --no-font to skip"
     fi
@@ -781,43 +817,46 @@ if [ "$XDG" -eq 1 ]; then
 else
   link "$REPO_DIR/zsh/.zshrc"            "$HOME/.zshrc"
 fi
-link "$REPO_DIR/starship/starship.toml"  "$HOME/.config/starship.toml"
+link "$REPO_DIR/starship/starship.toml"  "$CFG/starship.toml"
 
 # lazygit config (symlink the file only, so lazygit's own state.yml stays local)
-[ "$MINIMAL" -eq 0 ] && link "$REPO_DIR/lazygit/config.yml" "$HOME/.config/lazygit/config.yml"
+[ "$MINIMAL" -eq 0 ] && link "$REPO_DIR/lazygit/config.yml" "$CFG/lazygit/config.yml"
 # tmux config
-[ "$MINIMAL" -eq 0 ] && link "$REPO_DIR/tmux/tmux.conf" "$HOME/.config/tmux/tmux.conf"
+[ "$MINIMAL" -eq 0 ] && link "$REPO_DIR/tmux/tmux.conf" "$CFG/tmux/tmux.conf"
 # tmux-sessionizer helper on PATH (bound to prefix+f in tmux.conf)
 [ "$MINIMAL" -eq 0 ] && { dry || mkdir -p "$HOME/.local/bin"; \
   link "$REPO_DIR/scripts/tmux-sessionizer.sh" "$HOME/.local/bin/tmux-sessionizer"; }
 # sesh: config + the prefix+f picker (falls back to tmux-sessionizer without sesh)
-[ "$MINIMAL" -eq 0 ] && { link "$REPO_DIR/sesh/sesh.toml" "$HOME/.config/sesh/sesh.toml"; \
+[ "$MINIMAL" -eq 0 ] && { link "$REPO_DIR/sesh/sesh.toml" "$CFG/sesh/sesh.toml"; \
   link "$REPO_DIR/scripts/sesh-picker.sh" "$HOME/.local/bin/sesh-picker"; }
+# WSL: Windows Terminal scheme/profile fragment (the font itself is installed on Windows by hand)
+[ "$IS_WSL" -eq 1 ] && [ "$MINIMAL" -eq 0 ] && wsl_terminal_fragment
 # superfile config (location differs per OS — see spf_cfg_dir)
 [ "$MINIMAL" -eq 0 ] && link "$REPO_DIR/superfile/config.toml" "$(spf_cfg_dir)/config.toml"
 # nas-sync helper on PATH (rsync backups/pass → a NAS; set NAS_DEST in ~/.zshrc.local)
 [ "$MINIMAL" -eq 0 ] && link "$REPO_DIR/scripts/nas-sync.sh" "$HOME/.local/bin/nas-sync"
 # ghostty config (client-side terminal; skipped by --minimal/--server/--no-ghostty)
 [ "$MINIMAL" -eq 0 ] && [ "$NO_GHOSTTY" -eq 0 ] && \
-  link "$REPO_DIR/ghostty/config" "$HOME/.config/ghostty/config"
+  link "$REPO_DIR/ghostty/config" "$CFG/ghostty/config"
 # alacritty config (linked whether or not alacritty is installed; skipped by --minimal/--server/--no-alacritty)
 [ "$MINIMAL" -eq 0 ] && [ "$NO_ALACRITTY" -eq 0 ] && \
-  link "$REPO_DIR/alacritty/alacritty.toml" "$HOME/.config/alacritty/alacritty.toml"
+  link "$REPO_DIR/alacritty/alacritty.toml" "$CFG/alacritty/alacritty.toml"
 # atuin config + one-time import of the history you already have (skipped by --minimal)
 if [ "$MINIMAL" -eq 0 ]; then
-  link "$REPO_DIR/atuin/config.toml" "$HOME/.config/atuin/config.toml"
+  link "$REPO_DIR/atuin/config.toml" "$CFG/atuin/config.toml"
   if have atuin && [ ! -s "${XDG_DATA_HOME:-$HOME/.local/share}/atuin/history.db" ]; then
     info "Importing existing shell history into atuin (one time)…"
-    run atuin import auto >/dev/null 2>&1 || warn "atuin import failed — run: atuin import auto"
+    if [ -f "$HOME/.zsh_history" ]; then run atuin import zsh >/dev/null 2>&1 || warn "atuin import failed — run: atuin import zsh"
+    else run atuin import auto >/dev/null 2>&1 || warn "atuin import failed — run: atuin import auto"; fi
   fi
 fi
 # kitty config (linked whether or not kitty is installed; skipped by --minimal/--server/--no-kitty)
 [ "$MINIMAL" -eq 0 ] && [ "$NO_KITTY" -eq 0 ] && \
-  link "$REPO_DIR/kitty/kitty.conf" "$HOME/.config/kitty/kitty.conf"
+  link "$REPO_DIR/kitty/kitty.conf" "$CFG/kitty/kitty.conf"
 
 # Neovim / LazyVim config (whole dir; lazy-lock.json lands in the repo for version pinning)
 if [ "$MINIMAL" -eq 0 ] && [ "$NO_NVIM" -eq 0 ]; then
-  link "$REPO_DIR/nvim" "$HOME/.config/nvim"
+  link "$REPO_DIR/nvim" "$CFG/nvim"
 fi
 
 # --- point git at delta via an include (non-destructive & revertible: your

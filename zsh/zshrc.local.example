@@ -4,7 +4,8 @@
 #   cp zsh/zshrc.local.example ~/.zshrc.local && chmod 600 ~/.zshrc.local
 
 # --- Reproducible zinit (optional): pin to a commit for air-gapped/prod hosts ---
-# export ZINIT_PIN="<zinit-commit-sha>"
+# NOT here: this file is sourced after zinit has cloned itself. Put the line in ~/.zshenv:
+#   export ZINIT_PIN="<zinit-commit-sha>"
 
 # --- ssh-agent (opt-in): start a plain agent only if your platform doesn't ---
 # if [ -z "${SSH_AUTH_SOCK:-}" ] && command -v ssh-agent >/dev/null; then

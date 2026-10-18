@@ -42,7 +42,8 @@ Effort: S ≈ minutes, M ≈ an hour, L ≈ re-architecture.
 ## P1 — ✅ done (high value, in-scope, recurring in the videos)
 
 > Implemented 2026-07-11. Notes below are the original rationale + how each landed
-> in the repo; the shipped behavior matches. See `README.md` / `ROADMAP.md`.
+> in the repo; the shipped behavior matches, except where a later note says otherwise
+> (2026-10: `prefix f` runs sesh-picker; the sessionizer is its fallback). See `README.md` / `ROADMAP.md`.
 
 ### 1. `fabric` — AI patterns from the command line
 
@@ -65,8 +66,9 @@ Effort: S ≈ minutes, M ≈ an hour, L ≈ re-architecture.
   project dirs → attach/create a named tmux session for it. Origin ThePrimeagen; Mischa uses a variant.
 - **Maps to us:** we already ship `tmux/tmux.conf` **and** `fzf` **and** `fd` — this is the cheapest
   high-value add. A small self-contained `scripts/tmux-sessionizer.sh` (graceful if fzf/fd absent),
-  bound in `tmux.conf` (`bind -r f run-shell "tmux neww tmux-sessionizer"`) and optionally a zsh
-  `Ctrl-f` binding. `install.sh` symlinks it into `~/.local/bin`.
+  bound in `tmux.conf` (`bind f run-shell …`) and optionally a zsh `Ctrl-f` binding.
+  `install.sh` symlinks it into `~/.local/bin`. *(2026-10: the key now runs `sesh-picker`,
+  which hands over to this script when sesh is absent.)*
 - **Why it fits:** self-contained, no new heavy deps, matches the existing "keyboard-centered" prompt/tmux setup.
 
 ### 3. `pass` — GPG-encrypted password store
@@ -117,9 +119,9 @@ Effort: S ≈ minutes, M ≈ an hour, L ≈ re-architecture.
 
 ### 7. Synology NAS sync pattern — ✅ done (2026-07-13)
 
-- Video 2 syncs the password store / files to a Synology NAS. The user's NAS (192.168.1.211) speaks
-  **SMB/CIFS only** — SSH/NFS/rsync-daemon are closed (see the `nas-backup-target` memory), so the path is
-  mount-then-rsync-to-the-mount, not rsync-over-ssh.
+- Video 2 syncs the password store / files to a Synology NAS. A typical home Synology speaks
+  **SMB/CIFS only** (SSH/NFS/rsync-daemon closed by default), so the path is
+  mount-then-rsync-to-the-mount, not rsync-over-ssh. The address itself stays in `~/.zshrc.local`.
 - **Shipped:** `scripts/nas-sync.sh` (symlinked to `~/.local/bin/nas-sync`) rsyncs `$NAS_SYNC_PATHS`
   (default `~/backup` + `~/.password-store`) to a configurable `$NAS_DEST` — transport-agnostic (a mount
   path OR an ssh target). Additive (no `--delete`), `-n` dry-run, guards on missing rsync/NAS_DEST.

@@ -12,7 +12,7 @@ is zinit (plugins) + starship (prompt) + fzf + zoxide + eza/bat.
 
 ```bash
 ./install.sh                 # apply config on this machine (idempotent — safe to re-run)
-./install.sh --minimal       # zsh + plugins + prompt only; skips eza/bat + Nerd Font
+./install.sh --minimal       # zsh + plugins + prompt + fzf/bat/fd/rg; skips eza, the extras block, terminals, nvim, font
 ./install.sh --no-font       # skip the Nerd Font download
 ./install.sh --no-chsh       # don't change the default login shell
 exec zsh                     # reload the shell after editing config
@@ -86,6 +86,9 @@ on Enter, no network at startup). **sesh** is reached only through `scripts/sesh
 `~/.local/bin/sesh-picker`): tmux's `prefix f` and the `proj` function both call it, and it falls back to
 `tmux-sessionizer` when sesh is missing, so never bind sesh directly in `tmux.conf`. **superfile**'s config
 path differs per OS; use `spf_cfg_dir` in install.sh rather than hardcoding `~/.config/superfile`.
+**Config links honour `XDG_CONFIG_HOME`** through `$CFG` in install.sh (snapshot, doctor, uninstall and the
+tools themselves already did) — never write a literal `$HOME/.config` in a new `link` line. install.sh also puts
+`~/.local/bin` on its own PATH so a release-binary fallback is visible to the same run (and to CI's checks).
 **Nerd Font glyphs in config files are easy to lose**: some editors/tools strip private-use characters.
 `starship/starship.toml` must contain its pill caps (U+E0B6/U+E0B4) and icons; check with
 `python3 -c "t=open('starship/starship.toml',encoding='utf-8').read(); print(len([c for c in t if ord(c)>=0xE000]))"`
@@ -119,6 +122,7 @@ whole dir) so lazygit's runtime `state.yml` stays local and out of the repo.
   these invariants when editing: `compinit` runs with `-i` (never `-C` — `-C` skips the insecure-fpath
   check); `~/.zshrc.local` is sourced only when `-O` (owned by the user); prefer `pkg_install` over
   `curl | sh` (piped installers are a labelled fallback only); the prompt's `username`/`hostname` (SSH/root)
-  and `kubernetes`/`aws` segments are safety features — don't remove them. `--server` skips the font on
-  headless hosts.
+  and `kubernetes`/`aws` segments are safety features — don't remove them. `--server` skips the font and every
+  terminal config on headless hosts; WSL (detected via `/proc/version`) does the same automatically and installs
+  `windows-terminal/console.json` as a Windows Terminal fragment instead.
 - Commits use no Claude author/co-author references.

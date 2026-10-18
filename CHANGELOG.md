@@ -8,6 +8,12 @@ they landed on `main`. Newest first.
 
 ### Added
 
+- **WSL support**: install.sh detects WSL, skips the Linux font download and the terminal presets, and
+  installs a Windows Terminal fragment (`windows-terminal/console.json`) with the Catppuccin scheme and a
+  "console (WSL)" profile using the Nerd Font. WSL-only `open`, `pbcopy`, `pbpaste` and `winhome` helpers.
+  README and MANUAL gained a Windows section.
+- `Ctrl-→` / `Ctrl-←` move by word (and accept one word of an autosuggestion); `Alt-F`/`Alt-B` already did.
+
 - **Ghostty** is the terminal `install.sh` installs on desktops (`ghostty/config`, Catppuccin Mocha +
   JetBrainsMono Nerd Font, `ssh-terminfo` so `TERM=xterm-ghostty` works on servers). `--no-ghostty` skips it.
 - **atuin** replaces fzf for `Ctrl-R`: history in a SQLite database, fuzzy search, secrets filter, leading-space
@@ -36,6 +42,17 @@ they landed on `main`. Newest first.
 
 ### Fixed
 
+- Two independent review passes after the terminal work: install.sh now puts `~/.local/bin` on its own
+  PATH (release-binary fallbacks were invisible to the same run and to the CI checks); the one-time history
+  import uses `atuin import zsh` (the installer runs from bash, so `auto` imported the wrong shell); atuin's
+  init runs with `--disable-ai` so `?` stays a plain key; every config symlink honours `XDG_CONFIG_HOME`;
+  `uninstall.sh` removes the `--xdg` ZDOTDIR line from `~/.zshenv`; the Nerd Font zip is SHA256-verified;
+  Arch installs use `pacman -Syu --needed` (no partial upgrades); `prefix f` shows a message instead of
+  "returned 127" when the picker is missing; sesh-picker explains a missing fzf and works without fzf-tmux;
+  `fzf --zsh` is executed once at startup instead of twice; `zshrc` alias follows `--xdg`.
+- Docs corrected: `--minimal` keeps fzf/bat/fd/rg; `--server` skips all terminal configs; superfile's real
+  key bindings; atuin `Tab` behaviour; `ZINIT_PIN` belongs in `~/.zshenv`; resurrect callout markdown; stale
+  ROADMAP/IDEAS statements; a NAS address removed from the docs.
 - **The prompt never showed its icons.** Every Basic-Multilingual-Plane Nerd Font glyph in
   `starship/starship.toml` (pill caps, folder, branch, OS, language, docker, aws, clock, hourglass icons)
   had been stripped since the first commit, leaving empty strings; only the two supplementary-plane

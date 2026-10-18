@@ -44,6 +44,8 @@ setopt NO_BEEP
 setopt COMPLETE_IN_WORD ALWAYS_TO_END
 
 bindkey -e                    # emacs keybindings
+bindkey "^[[1;5C" forward-word   # Ctrl-→ / Ctrl-← move by word (and accept one word of a suggestion)
+bindkey "^[[1;5D" backward-word
 
 # ------------------------------------------------------------
 #  zinit — plugin manager (auto-installs on first run)
@@ -124,8 +126,8 @@ zstyle ':fzf-tab:complete:cd:*' fzf-preview 'eza -1 --color=always --icons=auto 
 #  https://github.com/junegunn/fzf
 # ------------------------------------------------------------
 if command -v fzf >/dev/null; then
-  if fzf --zsh >/dev/null 2>&1; then
-    source <(fzf --zsh)                       # fzf >= 0.48
+  if _fzf_init="$(fzf --zsh 2>/dev/null)"; then
+    eval "$_fzf_init"                         # fzf >= 0.48 (one exec, not a probe + a source)
   else
     # older fzf: source the distro's copies. Debian/Ubuntu → doc/examples,
     # Arch → /usr/share/fzf, Fedora/RHEL (EPEL) → /usr/share/fzf/shell (Fedora
@@ -135,6 +137,7 @@ if command -v fzf >/dev/null; then
     done
     unset _f
   fi
+  unset _fzf_init
 fi
 
 # ------------------------------------------------------------
@@ -144,7 +147,8 @@ fi
 #  Config: atuin/config.toml (no network at startup; sync is opt-in).
 #  https://atuin.sh
 # ------------------------------------------------------------
-command -v atuin >/dev/null && eval "$(atuin init zsh --disable-up-arrow)"
+#  --disable-ai: atuin ≥18.24 would otherwise bind `?` on an empty line to its hosted-LLM feature.
+command -v atuin >/dev/null && eval "$(atuin init zsh --disable-up-arrow --disable-ai)"
 
 # history-substring-search keys (Up/Down + Ctrl-P/N) are bound in the
 # plugin's atload hook above — in turbo mode the widget only exists

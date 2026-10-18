@@ -43,6 +43,13 @@ unlink_if_ours "$CONFIG/alacritty/alacritty.toml"
 unlink_if_ours "$CONFIG/kitty/kitty.conf"
 unlink_if_ours "$CONFIG/nvim"
 
+# --xdg appended one `export ZDOTDIR="<config>/zsh"` line to ~/.zshenv — remove exactly that line
+# so zsh goes back to reading ~/.zshrc (a restored backup, or nothing).
+if [ -f "$HOME/.zshenv" ] && grep -qF "export ZDOTDIR=\"$CONFIG/zsh\"" "$HOME/.zshenv"; then
+  grep -vF "export ZDOTDIR=\"$CONFIG/zsh\"" "$HOME/.zshenv" > "$HOME/.zshenv.tmp" && mv "$HOME/.zshenv.tmp" "$HOME/.zshenv"
+  ok "removed the --xdg ZDOTDIR line from ~/.zshenv"
+fi
+
 # Remove the git-delta include (leave the rest of ~/.gitconfig untouched).
 frag="$REPO_DIR/git/delta.gitconfig"
 if git config --global --get-all include.path 2>/dev/null | grep -qxF "$frag"; then

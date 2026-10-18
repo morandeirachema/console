@@ -150,6 +150,14 @@ if command -v systemctl >/dev/null; then
   alias jcu='journalctl --user'
 fi
 
+# --- WSL: bridge to the Windows side (defined only inside WSL; one tiny /proc read) ---
+if [[ -r /proc/version ]] && grep -qi microsoft /proc/version 2>/dev/null; then
+  command -v explorer.exe >/dev/null && open() { explorer.exe "$(wslpath -w "${1:-.}")"; }   # open in Explorer
+  command -v clip.exe     >/dev/null && alias pbcopy='clip.exe'                                 # pipe → Windows clipboard
+  command -v powershell.exe >/dev/null && alias pbpaste='powershell.exe -NoProfile -Command Get-Clipboard | tr -d "\r"'
+  winhome() { cd "$(wslpath -u "$(cmd.exe /c 'echo %USERPROFILE%' 2>/dev/null | tr -d '\r')")"; }   # cd to C:\Users\<you>
+fi
+
 # --- grep colors ---
 alias grep='grep --color=auto'
 alias egrep='grep -E --color=auto'
@@ -176,7 +184,7 @@ alias gla='git log --oneline --graph --decorate --all'
 
 # --- handy ---
 alias reload='exec zsh'                 # reload shell after config changes
-alias zshrc='${EDITOR:-nano} ~/.zshrc'
+alias zshrc='${EDITOR:-nano} ${ZDOTDIR:-$HOME}/.zshrc'   # follows --xdg
 alias please='sudo $(fc -ln -1)'        # re-run last command with sudo
 alias myip='curl -s https://ifconfig.me; echo'   # https://ifconfig.me
 # listening ports — ss on Linux, lsof on macOS

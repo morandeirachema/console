@@ -10,10 +10,9 @@
 preview_command = "eza --all --git --icons --color=always --group-directories-first {} 2>/dev/null || ls -la {}"
 
 # --- Declared sessions: name + path, optional startup command and windows. ---
-# Keep machine-specific ones out of the repo: sesh also reads
-# ~/.config/sesh/sesh.local.toml if you `include` it — or just add [[session]]
-# blocks to this file on the machine (the symlink makes that a repo edit, so commit
-# only the ones every machine should have).
+# This file is a symlink into the repo, so only declare projects every machine should
+# have. Per-machine projects need no entry at all: once you've cd'ed into a folder,
+# zoxide knows it and the picker lists it.
 #
 # [[session]]
 # name = "console"

@@ -7,11 +7,12 @@ configuration (Ghostty preset, Catppuccin Mocha, JetBrainsMono Nerd Font).
 **Contents** ·
 [Install](#1-install) ·
 [Terminal](#2-the-terminal-ghostty) ·
+[Windows/WSL](#21-windows-wsl) ·
 [Shell](#3-the-shell-zsh) ·
 [Prompt](#4-the-prompt-starship) ·
 [Finding things](#5-finding-things-fzf-zoxide-eza-bat-fd-rg) ·
-[History](#55-history-atuin) ·
-[Files](#56-superfile-a-file-manager-in-the-terminal) ·
+[History](#54-history-atuin) ·
+[Files](#55-superfile-a-file-manager-in-the-terminal) ·
 [tmux & sesh](#6-tmux-and-sesh-sessions-that-survive) ·
 [SSH tunnels](#7-ssh-tunnels) ·
 [git](#8-git-aliases-delta-lazygit) ·
@@ -49,10 +50,12 @@ sh bootstrap.sh         # accepts every install.sh flag, e.g. sh bootstrap.sh --
 ### 1.2 What the installer actually does
 
 1. Detects the package manager (brew on macOS; apt / dnf / pacman / zypper on Linux).
-2. Installs zsh, starship, fzf, zoxide, eza, bat, fd, ripgrep, delta, tldr, jq, yq, tmux,
-   lazygit, Neovim, the tree-sitter CLI, carapace, direnv, pass, fabric, sesh, and the
-   JetBrainsMono Nerd Font. Tools missing from a distro are fetched as GitHub release
-   binaries into `~/.local/bin`, SHA256-verified against the release checksums.
+2. Installs zsh, starship, fzf, zoxide, eza, bat, fd, ripgrep, delta, tldr, jq, yq, rsync, tmux,
+   lazygit, atuin, sesh, superfile, Neovim, the tree-sitter CLI, carapace, direnv, pass, fabric,
+   and the JetBrainsMono Nerd Font. Where a distro has no package, lazygit, atuin, sesh,
+   superfile, carapace, fabric, Neovim and tree-sitter are fetched as GitHub release binaries
+   into `~/.local/bin`, SHA256-verified against the release checksums (the font too); the rest
+   just warn.
 3. Snapshots every file it is about to replace into `~/backup/zsh/<timestamp>/`.
 4. **Symlinks** the repo into place (it never copies), so editing the repo edits your live
    shell:
@@ -83,8 +86,8 @@ sh bootstrap.sh         # accepts every install.sh flag, e.g. sh bootstrap.sh --
 | ---- | ------ |
 | `--dry-run` | print every package, symlink and edit the run **would** make; touch nothing |
 | `--doctor` | health check: tools, symlinks, font, git include, zinit state; then exit |
-| `--minimal` | zsh + plugins + prompt only; skips the CLI extras, nvim, terminals, font |
-| `--server` | headless box: skip the Nerd Font and all terminal configs (they live on your client) |
+| `--minimal` | zsh + plugins + prompt + fzf/bat/fd/rg; skips eza, delta, tldr, lazygit, atuin, sesh, spf, jq/yq, direnv, carapace, tmux, pass, fabric, terminals, nvim, font |
+| `--server` | headless box: skip the Nerd Font and all terminal configs (they live on your client). WSL does this automatically |
 | `--offline` | air-gapped: no network fetches at all; packages must come from your mirror |
 | `--xdg` | keep `$HOME` tidy: `.zshrc` goes under `ZDOTDIR=~/.config/zsh` |
 | `--no-nvim` | don't install Neovim/LazyVim or touch `~/.config/nvim` |
@@ -143,6 +146,33 @@ ghostty +show-config | grep font  # see what Ghostty actually resolved
 
 Using another terminal? Set its font to **JetBrainsMono Nerd Font** and you are done.
 
+### 2.1 Windows (WSL)
+
+On Windows, `console` runs inside WSL2. The installer detects WSL (`/proc/version` mentions
+Microsoft) and behaves like `--server` for the Windows-side pieces:
+
+1. Install WSL and the font on the Windows side, once:
+
+   ```powershell
+   wsl --install -d Ubuntu
+   winget install DEVCOM.JetBrainsMonoNerdFont
+   ```
+
+2. Inside Ubuntu, the normal install: `git clone … ~/code/console && cd ~/code/console && ./install.sh`.
+3. The installer skips the Linux font download and the Ghostty/Alacritty/kitty presets, and
+   writes a **Windows Terminal fragment** to
+   `%LOCALAPPDATA%\Microsoft\Windows Terminal\Fragments\console\console.json`
+   (source: `windows-terminal/console.json`). Fragments are additive: you get a
+   *Catppuccin Mocha (console)* scheme and a **console (WSL)** profile with the Nerd Font,
+   padding and block cursor; your own `settings.json` is untouched. Restart Windows Terminal
+   and choose the profile, or apply the scheme and font to your existing Ubuntu profile.
+4. WSL-only helpers in the shell: `open <path>` (Explorer), `pbcopy`/`pbpaste` (Windows
+   clipboard), `winhome` (cd to `C:\Users\<you>`). tmux copy-mode reaches the Windows
+   clipboard through OSC 52 as well.
+
+`--doctor` reminds you about the Windows-side font. Native PowerShell, cmd or Git Bash are
+not supported: the installer and the symlink model need a Linux userland.
+
 ---
 
 ## 3. The shell (zsh)
@@ -191,7 +221,7 @@ History holds 50 000 entries in `~/.zsh_history`, with timestamps.
 
 | Key | Does |
 | --- | ---- |
-| `→` / `End` | accept the autosuggestion (`Ctrl-→` = one word) |
+| `→` / `End` | accept the autosuggestion (`Ctrl-→` or `Alt-F` = one word) |
 | `Tab` | fuzzy completion menu; keep typing to filter; `Ctrl-/` toggles the preview |
 | `↑` / `↓` · `Ctrl-P` / `Ctrl-N` | history matching the current prefix |
 | `Ctrl-R` | search the whole history (atuin); `Ctrl-R` again cycles host → session → directory |
@@ -253,7 +283,7 @@ starship explain                    # what each pill is showing right now and wh
 
 `Ctrl-T` and `Alt-C` open [fzf](https://github.com/junegunn/fzf). Type a few letters in order
 (not the exact name); `↑`/`↓` to move; `Enter` to pick; `Esc` to cancel; `Ctrl-/` to hide or
-show the preview. (`Ctrl-R` is atuin, [section 5.5](#55-history-atuin).)
+show the preview. (`Ctrl-R` is atuin, [section 5.4](#54-history-atuin).)
 
 ![Ctrl-T: pick a file into the command line, previewed with bat](docs/screenshots/ctrl-t.png)
 
@@ -294,7 +324,7 @@ z -                # back to the previous directory
 
 ![`tldr tar`](docs/screenshots/tldr.png)
 
-### 5.5 History (atuin)
+### 5.4 History (atuin)
 
 `Ctrl-R` opens [atuin](https://atuin.sh). Instead of grepping a text file it searches a
 database of every command you have run, on every host that shares the database, with the
@@ -307,7 +337,7 @@ directory, exit code and duration of each. Type a few letters in order; the list
 | `Ctrl-R` again | cycle the filter: all → this host → this session → this directory |
 | `↑` / `↓` | move; `Ctrl-O` opens the inspector (when, where, exit code, duration) |
 | `Enter` | put the command on your line **to review**; it does not run |
-| `Tab` | same, but keep the search open |
+| `Tab` | also puts the command on your line to edit (same as Enter with `enter_accept = false`) |
 | `Esc` | back to whatever you had typed |
 
 What is deliberately **not** recorded: lines that start with a space (same rule as
@@ -321,7 +351,7 @@ From the shell: `h` opens the same search, `hstats` lists your most-used command
 imported once by the installer (`atuin import zsh` repeats it). `↑`/`↓` are untouched: they
 still cycle matching history the plain way.
 
-### 5.6 superfile: a file manager in the terminal
+### 5.5 superfile: a file manager in the terminal
 
 `spf` (or `fm`) opens [superfile](https://superfile.dev): a two-pane file manager with
 previews, themed to match. Quit with `q` and your shell `cd`s to wherever you ended up.
@@ -331,10 +361,11 @@ previews, themed to match. Quit with `q` and your shell `cd`s to wherever you en
 | Key | Does | Key | Does |
 | --- | ---- | --- | ---- |
 | `↑` `↓` / `j` `k` | move | `Enter` / `l` | open directory or file |
-| `h` / `Backspace` | parent directory | `Space` | select (multi) |
-| `c` · `x` · `v` | copy · cut · paste | `d` | delete (to trash) |
-| `r` | rename | `n` · `N` | new file · new folder |
-| `/` | search in the panel | `z` | zoxide jump |
+| `h` / `Backspace` | parent directory | `v` | select mode (`J`/`K` extend, `A` select all) |
+| `Ctrl-c` · `Ctrl-x` · `Ctrl-v` | copy · cut · paste | `Ctrl-d` | delete (to trash) |
+| `Ctrl-r` | rename | `Ctrl-n` | new file (end the name with `/` for a folder) |
+| `/` | search in the panel | `f` · `.` · `o` | toggle preview · dotfiles · sort menu |
+| `Ctrl-p` · `P` | copy the path · pin the directory | `e` | open in `$EDITOR` |
 | `Tab` · `q` | next panel · quit | `?` | all keys |
 
 Previews use `bat`; `e` opens the file in `$EDITOR` (nvim). The config is
@@ -592,8 +623,10 @@ What people put there:
 | production prompt accent | `export STARSHIP_CONFIG=~/.config/starship.prod.toml` |
 | project roots for the sessionizer fallback | `export TMUX_SESSIONIZER_PATHS="$HOME/code $HOME/work"` |
 | NAS target | `export NAS_DEST=...` |
-| pinned zinit for reproducible hosts | `export ZINIT_PIN=<commit>` (put it in `~/.zshenv`) |
 | a plain ssh-agent when the platform has none | the commented block in the example |
+
+One exception: `ZINIT_PIN` must go in `~/.zshenv`, because `.zshrc.local` is sourced after zinit
+has already cloned itself.
 | host aliases | `alias vpn='sudo openvpn --config ~/work/vpn.conf'` |
 
 Editor settings go in `nvim/lua/config/*.lua`; terminal tweaks in `ghostty/config`;
@@ -625,7 +658,7 @@ cd ~/code/console && git pull && exec zsh      # the configs are symlinks: that 
 
 | Symptom | Cause and fix |
 | ------- | ------------- |
-| boxes or `?` instead of icons | the terminal is not using a Nerd Font; set it to JetBrainsMono Nerd Font (`fc-list \| grep -i jetbrains` to confirm it is installed) |
+| boxes or `?` instead of icons | the terminal is not using a Nerd Font; set it to JetBrainsMono Nerd Font (`fc-list \| grep -i jetbrains` to confirm it is installed). On WSL the font must be installed on **Windows** and selected in Windows Terminal |
 | no suggestions / colours, plain Tab | zinit never cloned (offline). `./install.sh --doctor` shows it; `rm ~/.local/share/zinit/.clone-failed` and open a new shell |
 | `Ctrl-T` / `Alt-C` do nothing | fzf is too old or its key-bindings file is missing; `fzf --version` ≥ 0.48 fixes it, or install the distro's `fzf` package fully |
 | `bat`/`fd` "command not found" on Debian | they are `batcat`/`fdfind` there; the aliases handle it once the shell is reloaded |

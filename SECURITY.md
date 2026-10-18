@@ -7,8 +7,16 @@ less safe. See [`ROADMAP.md`](ROADMAP.md) for what's still planned.
 ## Secrets & shell history
 
 - **Keep secrets out of history:** commands typed with a **leading space** are
-  never written to `~/.zsh_history` (`HIST_IGNORE_SPACE`). Prefix any command
-  that contains a token/password with a space.
+  never written to `~/.zsh_history` (`HIST_IGNORE_SPACE`) **or to atuin's database**
+  (`history_filter = ["^\\s"]`). Prefix any command that contains a token/password
+  with a space.
+- **atuin** (`Ctrl-R`) keeps every command, its directory, exit code and duration in a
+  local SQLite file under `~/.local/share/atuin/`. Its `secrets_filter` drops lines that
+  look like AWS keys, GitHub/Slack tokens and similar; `auto_sync` and `update_check`
+  are **off**, so nothing leaves the machine unless you `atuin login` and turn sync on.
+  `Enter` in the picker edits the line, it never runs it (`enter_accept = false`), and
+  atuin's hosted-AI key binding is disabled (`--disable-ai`).
+- **superfile** has `auto_check_update = false`; **sesh** makes no network calls.
 - **Never commit secrets.** Machine-specific values (tokens, private paths, work
   aliases) go in `~/.zshrc.local`, which is git-ignored and sourced **only if you
   own it** (guards against another account planting one). Start from
@@ -26,9 +34,9 @@ less safe. See [`ROADMAP.md`](ROADMAP.md) for what's still planned.
   you to fetch it, read it, then run it — so the same posture applies to this repo's
   own front door. It refuses to overwrite a non-git directory, and `--dry-run`
   prints every step without touching the disk.
-- **Release binaries are checksum-verified**: lazygit, neovim, carapace and fabric
-  downloads are SHA256-checked against their published checksums and refused on
-  mismatch. Version lookups hit the GitHub API and use `GITHUB_TOKEN`/`GH_TOKEN`
+- **Release binaries are checksum-verified**: lazygit, neovim, carapace, fabric, atuin,
+  sesh, superfile, the tree-sitter CLI and the Nerd Font zip are SHA256-checked against
+  their published checksums and refused on mismatch. Version lookups hit the GitHub API and use `GITHUB_TOKEN`/`GH_TOKEN`
   when set (only to lift the anonymous rate limit; the token is never sent to the
   download CDN).
 - **Pin zinit** for reproducible/air-gapped builds by exporting `ZINIT_PIN=<sha>`

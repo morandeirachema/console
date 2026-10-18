@@ -76,7 +76,7 @@ pkg_install() {
     brew)   brew install "$@";;
     apt)    $SUDO apt-get update -y || true; $SUDO apt-get install -y "$@";;
     dnf)    $SUDO dnf install -y "$@";;
-    pacman) $SUDO pacman -Sy --noconfirm "$@";;
+    pacman) $SUDO pacman -Syu --needed --noconfirm "$@";;
     zypper) $SUDO zypper install -y "$@";;
     *) return 1;;
   esac
