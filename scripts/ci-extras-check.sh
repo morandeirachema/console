@@ -55,10 +55,11 @@ else
   bad "pre-change backup did not capture the old ~/.zshrc"
 fi
 
-# --- alacritty: config symlinked (hard); binary is a soft check (GUI pkg) ---
+# --- terminals: configs symlinked (hard); ghostty binary is a soft check (no Debian/Ubuntu package) ---
+[ -L "$HOME/.config/ghostty/config" ] && ok "ghostty config symlinked" || bad "ghostty config not symlinked"
 [ -L "$HOME/.config/alacritty/alacritty.toml" ] && ok "alacritty.toml symlinked" || bad "alacritty.toml not symlinked"
 [ -L "$HOME/.config/kitty/kitty.conf" ] && ok "kitty.conf symlinked" || bad "kitty.conf not symlinked"
-command -v alacritty >/dev/null && ok "alacritty installed" || note "alacritty binary not installed (package missing?) — non-fatal"
+command -v ghostty >/dev/null && ok "ghostty installed" || note "ghostty binary not installed (no package on this distro?) — non-fatal"
 
 # --- fabric: hard-verify IF present; warn (don't fail) if the fetch was missed ---
 if command -v fabric >/dev/null; then

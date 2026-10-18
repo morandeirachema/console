@@ -109,6 +109,19 @@ Ideas taken from three Mischa van den Burg videos (see
   clobber a non-git directory; `--dry-run`, `--no-install`, `--dir`, `--repo`.
   CI proves it on **git-less** ubuntu/fedora/arch images.
 
+## ✅ Done (terminal pass, 2026-10)
+
+- **Ghostty is the default terminal** — `ghostty/config` (Catppuccin Mocha + JetBrainsMono
+  Nerd Font, explicit palette so it stays byte-identical to the Alacritty/kitty presets),
+  installed on desktops (brew cask on macOS, `pkg_install` on Arch/Fedora, a labelled
+  `warn` → ghostty.org/download where there is no official package) and symlinked to
+  `~/.config/ghostty/config`; `--no-ghostty` / `--server` skip it. The config enables the
+  `ssh-terminfo` + `ssh-env` shell-integration features so `TERM=xterm-ghostty` doesn't
+  break `clear`/tmux/less on servers lacking the terminfo. **Alacritty is now link-only**
+  (like kitty) so install.sh installs a single GUI terminal. Covered by snapshot, `--doctor`,
+  `uninstall.sh`, both CI check scripts, and a `key = value` lint in CI (full
+  `ghostty +validate-config` only where the binary exists).
+
 ## ✅ Done (review pass, 2026-09)
 
 - **zinit clone failure degrades gracefully** — an offline box used to print

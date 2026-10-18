@@ -1,17 +1,18 @@
 #!/usr/bin/env bash
 # ============================================================
 #  install.sh — bootstrap chema's zsh console on any Linux or macOS box
-#  Usage: ./install.sh [--dry-run] [--doctor] [--minimal] [--server] [--offline] [--xdg] [--no-nvim] [--no-fabric] [--no-alacritty] [--no-kitty] [--no-font] [--no-chsh] [-y]
+#  Usage: ./install.sh [--dry-run] [--doctor] [--minimal] [--server] [--offline] [--xdg] [--no-nvim] [--no-fabric] [--no-ghostty] [--no-alacritty] [--no-kitty] [--no-font] [--no-chsh] [-y]
 #    --dry-run      show every package/symlink/change this run WOULD make — touch nothing
 #    --doctor       health check: report installed tools, symlinks, font, git config — then exit
 #    --minimal      only zsh + plugins + prompt (skip eza/bat/fd/rg/delta/tldr/lazygit/nvim/font)
-#    --server       headless box: skip the Nerd Font + Alacritty (both live on your client)
+#    --server       headless box: skip the Nerd Font + Ghostty (both live on your client)
 #    --offline      air-gapped: no internet fetches — packages must come from your mirror,
 #                   and skip the curl-installer fallbacks, release binaries, and font download
 #    --xdg          XDG layout: put .zshrc under ZDOTDIR=~/.config/zsh (keeps $HOME tidy)
 #    --no-nvim      don't install Neovim/LazyVim or touch ~/.config/nvim
 #    --no-fabric    don't install fabric (the AI-patterns CLI)
-#    --no-alacritty don't install the Alacritty terminal or link its config
+#    --no-ghostty   don't install the Ghostty terminal or link its config
+#    --no-alacritty don't link the Alacritty terminal config
 #    --no-kitty     don't link the kitty terminal config
 #    --no-font      don't download the Nerd Font
 #    --no-chsh      don't change the default login shell
@@ -24,19 +25,20 @@ STAMP="$(date +%Y%m%d-%H%M%S)"
 LOGDIR="${XDG_STATE_HOME:-$HOME/.local/state}/console"
 LOGFILE="$LOGDIR/install-$STAMP.log"   # audit trail of everything this run changed
 BACKUP_DIR="$HOME/backup/zsh/$STAMP"   # consolidated snapshot of configs this run replaces (visible path)
-NO_FONT=0; NO_CHSH=0; MINIMAL=0; NO_NVIM=0; NO_FABRIC=0; NO_ALACRITTY=0; NO_KITTY=0; OFFLINE=0; XDG=0; DRY=0; DOCTOR=0
+NO_FONT=0; NO_CHSH=0; MINIMAL=0; NO_NVIM=0; NO_FABRIC=0; NO_GHOSTTY=0; NO_ALACRITTY=0; NO_KITTY=0; OFFLINE=0; XDG=0; DRY=0; DOCTOR=0
 
 for a in "$@"; do
   case "$a" in
     --dry-run)      DRY=1;;
     --doctor)       DOCTOR=1;;
     --no-font)      NO_FONT=1;;
-    --server)       NO_FONT=1; NO_ALACRITTY=1; NO_KITTY=1;;
+    --server)       NO_FONT=1; NO_GHOSTTY=1; NO_ALACRITTY=1; NO_KITTY=1;;
     --offline)      OFFLINE=1; NO_FONT=1;;
     --xdg)          XDG=1;;
     --no-chsh)      NO_CHSH=1;;
     --no-nvim)      NO_NVIM=1;;
     --no-fabric)    NO_FABRIC=1;;
+    --no-ghostty)   NO_GHOSTTY=1;;
     --no-alacritty) NO_ALACRITTY=1;;
     --no-kitty)     NO_KITTY=1;;
     --minimal)      MINIMAL=1; NO_FONT=1;;
@@ -285,6 +287,7 @@ snapshot() {
     "${XDG_CONFIG_HOME:-$HOME/.config}/zsh/.zshrc"
     "${XDG_CONFIG_HOME:-$HOME/.config}/starship.toml"
     "${XDG_CONFIG_HOME:-$HOME/.config}/tmux/tmux.conf"
+    "${XDG_CONFIG_HOME:-$HOME/.config}/ghostty/config"
     "${XDG_CONFIG_HOME:-$HOME/.config}/alacritty/alacritty.toml"
     "${XDG_CONFIG_HOME:-$HOME/.config}/kitty/kitty.conf"
     "${XDG_CONFIG_HOME:-$HOME/.config}/lazygit/config.yml"
@@ -354,7 +357,8 @@ doctor() {
     rm -rf "$nst"
   else dn "nvim missing"; fi
   have tree-sitter && dg "tree-sitter CLI" || dn "tree-sitter CLI missing (nvim can't build parsers)"
-  have alacritty && dg "alacritty" || do_ "alacritty not installed (optional; expected on servers)"
+  have ghostty && dg "ghostty" || do_ "ghostty not installed (optional; expected on servers)"
+  have alacritty && dg "alacritty" || do_ "alacritty not installed (optional; config still linked if you use it)"
   have kitty && dg "kitty" || do_ "kitty not installed (optional; config still linked if you use it)"
 
   dh "Symlinks → repo"
@@ -364,6 +368,7 @@ doctor() {
   dlink "$cfg/tmux/tmux.conf"               "tmux/tmux.conf"
   dlink "$HOME/.local/bin/tmux-sessionizer" "scripts/tmux-sessionizer.sh"
   dlink "$HOME/.local/bin/nas-sync"         "scripts/nas-sync.sh"
+  dlink "$cfg/ghostty/config"               "ghostty/config"
   dlink "$cfg/alacritty/alacritty.toml"     "alacritty/alacritty.toml"
   dlink "$cfg/kitty/kitty.conf"             "kitty/kitty.conf"
   dlink "$cfg/lazygit/config.yml"           "lazygit/config.yml"
@@ -494,13 +499,15 @@ if [ "$MINIMAL" -eq 0 ]; then
     else install_fabric_release || warn "fabric failed — see https://github.com/danielmiessler/fabric/releases"
     fi
   fi
-  # alacritty — GPU-accelerated terminal (client-side; skipped by --server/--no-alacritty)
-  if [ "$NO_ALACRITTY" -eq 0 ] && ! have alacritty; then
-    info "Installing alacritty…"
+  # ghostty — GPU-accelerated, platform-native terminal (client-side; skipped by --server/--no-ghostty)
+  # Packaged officially on Arch and Fedora 42+; Debian/Ubuntu/openSUSE have no official package,
+  # so the warn fallback points at the download page instead of piping an installer.
+  if [ "$NO_GHOSTTY" -eq 0 ] && ! have ghostty; then
+    info "Installing ghostty…"
     if [ "$PM" = brew ]; then
-      run brew install --cask alacritty || warn "alacritty cask failed — see https://alacritty.org"
+      run brew install --cask ghostty || warn "ghostty cask failed — see https://ghostty.org/download"
     else
-      pkg_install alacritty || warn "alacritty not packaged here — see https://alacritty.org"
+      pkg_install ghostty || warn "ghostty not packaged here — see https://ghostty.org/download"
     fi
   fi
 fi
@@ -648,7 +655,10 @@ link "$REPO_DIR/starship/starship.toml"  "$HOME/.config/starship.toml"
   link "$REPO_DIR/scripts/tmux-sessionizer.sh" "$HOME/.local/bin/tmux-sessionizer"; }
 # nas-sync helper on PATH (rsync backups/pass → a NAS; set NAS_DEST in ~/.zshrc.local)
 [ "$MINIMAL" -eq 0 ] && link "$REPO_DIR/scripts/nas-sync.sh" "$HOME/.local/bin/nas-sync"
-# alacritty config (client-side terminal; skipped by --minimal/--server/--no-alacritty)
+# ghostty config (client-side terminal; skipped by --minimal/--server/--no-ghostty)
+[ "$MINIMAL" -eq 0 ] && [ "$NO_GHOSTTY" -eq 0 ] && \
+  link "$REPO_DIR/ghostty/config" "$HOME/.config/ghostty/config"
+# alacritty config (linked whether or not alacritty is installed; skipped by --minimal/--server/--no-alacritty)
 [ "$MINIMAL" -eq 0 ] && [ "$NO_ALACRITTY" -eq 0 ] && \
   link "$REPO_DIR/alacritty/alacritty.toml" "$HOME/.config/alacritty/alacritty.toml"
 # kitty config (linked whether or not kitty is installed; skipped by --minimal/--server/--no-kitty)

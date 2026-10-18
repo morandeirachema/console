@@ -56,14 +56,14 @@ Knowing which is which makes everything else click:
 
 ```text
 your screen
-└─ Terminal emulator   (Alacritty)   the app/window that draws text, colours, fonts
+└─ Terminal emulator   (Ghostty)     the app/window that draws text, colours, fonts
    └─ Shell            (zsh)         reads your keystrokes and runs your commands
       └─ Prompt        (starship)    the ❯ line: where you are, git status, the clock
          ❯ git status               ← you type here; the shell runs it
 ```
 
 - **Terminal emulator** — the *window*. It just displays characters and sends your
-  keypresses inward. `console` ships one ([Alacritty](https://alacritty.org)), but
+  keypresses inward. `console` ships one ([Ghostty](https://ghostty.org)), but
   any terminal works.
 - **Shell** — the *program that runs commands*. The default on most systems is
   `bash`; `console` uses **[zsh](https://www.zsh.org)**, which is compatible but far
@@ -139,12 +139,13 @@ already zsh, so it isn't changed; the font is installed via `brew --cask`.
 | `--dry-run` | print every package/symlink/change the run **would** make — touch nothing |
 | `--doctor` | health check: report tools, symlinks, font, git config — then exit |
 | `--minimal` | zsh + plugins + prompt only (skip the extra CLI tools, nvim, font) |
-| `--server` | headless box: skip the Nerd Font **and** Alacritty (both live on your client) |
+| `--server` | headless box: skip the Nerd Font **and** Ghostty (both live on your client) |
 | `--offline` | air-gapped: no internet fetches — packages come from your mirror |
 | `--xdg` | put `.zshrc` under `ZDOTDIR=~/.config/zsh` to keep `$HOME` tidy |
 | `--no-nvim` | don't install Neovim/LazyVim or touch `~/.config/nvim` |
 | `--no-fabric` | don't install [fabric](https://github.com/danielmiessler/fabric) (the AI-patterns CLI) |
-| `--no-alacritty` | don't install [Alacritty](https://alacritty.org) or link its config |
+| `--no-ghostty` | don't install [Ghostty](https://ghostty.org) or link its config |
+| `--no-alacritty` | don't link the [Alacritty](https://alacritty.org) terminal config |
 | `--no-kitty` | don't link the [kitty](https://sw.kovidgoyal.net/kitty/) terminal config |
 | `--no-font` | skip the Nerd Font download |
 | `--no-chsh` | don't change your default login shell |
@@ -154,7 +155,7 @@ already zsh, so it isn't changed; the font is installed via `brew --cask`.
 
 > [!IMPORTANT]
 > **Fonts & icons.** The prompt uses special glyphs (folder, git, distro icons) that
-> need a **Nerd Font**. The bundled Alacritty **and kitty** configs already set it. On
+> need a **Nerd Font**. The bundled Ghostty, Alacritty **and kitty** configs already set it. On
 > any other terminal, set its font to **JetBrainsMono Nerd Font** (e.g. kitty:
 > `font_family JetBrainsMono Nerd Font`). Seeing boxes like `□`? That's a missing
 > font, not a broken install.
@@ -183,7 +184,7 @@ Everything here is free, open-source, and cross-platform. You'll meet each one i
 | 🪟 | [tmux](https://github.com/tmux/tmux) | keep terminals **alive** across disconnects; split the screen |
 | 🔑 | [pass](https://www.passwordstore.org) | GPG-encrypted password manager (bring your own key) |
 | 🤖 | [fabric](https://github.com/danielmiessler/fabric) | run AI prompts as normal commands (`--no-fabric` to skip) |
-| 🖥️ | [Alacritty](https://alacritty.org) | fast GPU terminal, pre-themed to match (`--no-alacritty` to skip) |
+| 🖥️ | [Ghostty](https://ghostty.org) | fast, native GPU terminal, pre-themed to match (`--no-ghostty` to skip) |
 
 ---
 
@@ -525,20 +526,31 @@ Two optional, security-minded extras:
 
 ---
 
-### 🖥️ Terminal (Alacritty + kitty)
+### 🖥️ Terminal (Ghostty + Alacritty + kitty)
 
-Two matching terminal presets — both **Catppuccin Mocha** with **JetBrainsMono Nerd
+Three matching terminal presets — all **Catppuccin Mocha** with **JetBrainsMono Nerd
 Font** baked in, so the whole stack (terminal → prompt → tmux → editor) is one coherent
 look and every glyph renders with zero setup:
 
-- [`alacritty/alacritty.toml`](alacritty/alacritty.toml) — GPU-accelerated; **installed
-  and linked** on desktops (`--no-alacritty` to skip).
+- [`ghostty/config`](ghostty/config) — the default: GPU-accelerated with native
+  macOS/GTK windows; **installed and linked** on desktops (`--no-ghostty` to skip).
+  Officially packaged on macOS (brew), Arch and Fedora 42+; on Debian/Ubuntu the
+  installer points you at [ghostty.org/download](https://ghostty.org/download) instead.
+- [`alacritty/alacritty.toml`](alacritty/alacritty.toml) — **linked** whether or not
+  Alacritty is installed (`--no-alacritty` to skip); install it yourself if you prefer it.
 - [`kitty/kitty.conf`](kitty/kitty.conf) — **linked** whether or not kitty is installed
-  (`--no-kitty` to skip); install kitty yourself if you prefer it.
+  (`--no-kitty` to skip).
 
-Both are intentionally minimal — **tmux** provides tabs, splits, and sessions. Skipped
+All three are intentionally minimal — **tmux** provides tabs, splits, and sessions. Skipped
 on servers (`--server`). Using WezTerm or your OS terminal instead? Just point its font
 at *JetBrainsMono Nerd Font*.
+
+> [!NOTE]
+> Ghostty sets `TERM=xterm-ghostty`, which most servers don't know. The shipped config
+> turns on Ghostty's `ssh-terminfo` + `ssh-env` shell-integration features, so `ssh`
+> copies the terminfo over on first connect (or falls back to `xterm-256color`) and
+> `clear`, `tmux` and `less` keep working on every box. None of this makes Ghostty your
+> OS-level default terminal — launch it like any other app.
 
 ---
 
@@ -791,6 +803,7 @@ Built to run on servers and privileged boxes — full details in
 ├── nvim/                   # LazyVim config          ->  ~/.config/nvim
 ├── lazygit/config.yml      # lazygit (uses delta)    ->  ~/.config/lazygit/config.yml
 ├── tmux/tmux.conf          # tmux config             ->  ~/.config/tmux/tmux.conf
+├── ghostty/config          # terminal preset (default) -> ~/.config/ghostty/config
 ├── alacritty/alacritty.toml # terminal preset        ->  ~/.config/alacritty/alacritty.toml
 ├── kitty/kitty.conf        # terminal preset         ->  ~/.config/kitty/kitty.conf
 ├── git/delta.gitconfig     # git-delta, included into ~/.gitconfig

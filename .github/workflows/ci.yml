@@ -35,6 +35,12 @@ jobs:
         run: |
           python3 -c "import tomllib; tomllib.load(open('starship/starship.toml','rb'))"
           python3 -c "import tomllib; tomllib.load(open('alacritty/alacritty.toml','rb'))"
+      - name: Validate ghostty config (key = value lint; full check only if ghostty is present)
+        run: |
+          if grep -vE '^\s*(#|$)' ghostty/config | grep -vE '^[a-z-]+ = .+$'; then
+            echo "ghostty/config: lines above are not 'key = value'"; exit 1; fi
+          # the flag only accepts the --flag=value form; skip (don't mask) when ghostty is absent
+          if command -v ghostty >/dev/null; then ghostty +validate-config --config-file=ghostty/config; fi
       - name: Validate git-delta fragment
         run: git config -f git/delta.gitconfig --list
       - name: --dry-run and --doctor exit 0 and touch nothing

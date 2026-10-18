@@ -19,6 +19,7 @@ for p in \
   "$cfg/tmux/tmux.conf" \
   "$HOME/.local/bin/tmux-sessionizer" \
   "$HOME/.local/bin/nas-sync" \
+  "$cfg/ghostty/config" \
   "$cfg/alacritty/alacritty.toml" \
   "$cfg/kitty/kitty.conf" \
   "$cfg/lazygit/config.yml"; do

@@ -74,6 +74,11 @@ macOS specifics already handled: font via `--cask font-jetbrains-mono-nerd-font`
 and the chsh step is skipped when the login shell is already any `*/zsh` (so brew-zsh doesn't fight
 system-zsh). Debian's `fdfind`/`batcat` binary names are handled in `aliases.zsh`; brew ships real
 `fd`/`bat`, so both paths work.
+The terminal install.sh installs is **Ghostty** (`ghostty/config`; brew cask on macOS, `pkg_install` on
+Arch/Fedora, a `warn` pointing at ghostty.org/download on Debian/Ubuntu, which have no official package).
+Alacritty and kitty configs are shipped and symlinked but never installed. All three presets must keep the
+same Catppuccin Mocha hexes and font; the Ghostty one must keep `ssh-terminfo` enabled or `TERM=xterm-ghostty`
+breaks on servers.
 Two tools that are often absent from distro repos (lazygit, neovim) have `install_*_release` helpers that
 fetch the right arch tarball from GitHub into `~/.local/bin` — follow that pattern for similar tools.
 

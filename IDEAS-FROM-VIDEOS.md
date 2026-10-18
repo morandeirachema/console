@@ -30,7 +30,7 @@ client) and is **out of scope** for a portable shell-dotfiles repo — see the l
 | 3 | **pass** — GPG-encrypted Unix password store | 2, 3 | High | S–M | **P1 · ✅ done** |
 | 4 | **Deeper fzf previews** — bat/eza in Ctrl-T / Alt-C / fzf-tab | 3 | High | S | **P1 · ✅ done** |
 | 5 | **SSH workflow** — port-forward helpers + `config.local` include | 1, 3 | Med | S | **P2 · ✅ done** |
-| 6 | **Alacritty config** — Catppuccin + JetBrainsMono | 1 | Med | M | **P2 · ✅ done** |
+| 6 | **Alacritty config** — Catppuccin + JetBrainsMono | 1 | Med | M | **P2 · ✅ done** (now link-only; Ghostty is the installed default, see ROADMAP) |
 | 7 | **NAS sync pattern** — pass-store / backups → Synology NAS | 2 | Med | S | **P2 · ✅ done** |
 | 8 | **Notes helper** — Zettelkasten / Johnny-Decimal capture | 1, 2 | Low | S | P3 |
 | 9 | **chezmoi** — dotfile manager instead of symlinks | 1 | Low | L | Evaluate → likely decline |
@@ -112,6 +112,8 @@ Effort: S ≈ minutes, M ≈ an hour, L ≈ re-architecture.
   `--cask` on macOS, `pkg_install` elsewhere), skipped by `--minimal`/`--server`/`--no-alacritty`.
   Removes the manual "set your terminal font" step. TOML validated in CI; symlink asserted by the
   `extras` job. Other terminals (e.g. kitty) still work — nothing depends on Alacritty.
+- **2026-10:** Ghostty (`ghostty/config`, same palette) became the terminal install.sh installs;
+  Alacritty is still shipped and linked, but no longer installed (`--no-alacritty` = don't link).
 
 ### 7. Synology NAS sync pattern — ✅ done (2026-07-13)
 
