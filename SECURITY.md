@@ -101,4 +101,4 @@ trail of everything it changed to `~/.local/state/console/install-<ts>.log`.
 ## Reporting
 
 This repo has no formal disclosure process; open an issue on
-<https://github.com/morandeirachema/zsh> for anything security-relevant.
+<https://github.com/morandeirachema/console> for anything security-relevant.

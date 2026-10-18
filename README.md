@@ -4,7 +4,7 @@
 
 <h3>Turn a plain terminal into a fast, friendly, guided workspace — <strong>one clone, every machine.</strong></h3>
 
-[![CI](https://github.com/morandeirachema/zsh/actions/workflows/ci.yml/badge.svg)](https://github.com/morandeirachema/zsh/actions/workflows/ci.yml)
+[![CI](https://github.com/morandeirachema/console/actions/workflows/ci.yml/badge.svg)](https://github.com/morandeirachema/console/actions/workflows/ci.yml)
 ![shell](https://img.shields.io/badge/shell-zsh-1e88e5)
 ![platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS-4c566a)
 ![prompt](https://img.shields.io/badge/prompt-starship-DD0B78)
@@ -93,7 +93,7 @@ shortcuts and leaves your originals untouched.
 automatically:
 
 ```bash
-git clone https://github.com/morandeirachema/zsh.git ~/code/console
+git clone https://github.com/morandeirachema/console.git ~/code/console
 cd ~/code/console
 ./install.sh          # want to look before you leap? ./install.sh --dry-run
 exec zsh              # start your new shell (or just open a new terminal)
@@ -105,7 +105,7 @@ breaks that circle: it installs `git` with your package manager, clones, and han
 Fetch it, read it, run it:
 
 ```bash
-curl -fsSLO https://raw.githubusercontent.com/morandeirachema/zsh/main/bootstrap.sh
+curl -fsSLO https://raw.githubusercontent.com/morandeirachema/console/main/bootstrap.sh
 less bootstrap.sh     # ~135 lines — read before you run, as with any installer
 sh bootstrap.sh       # any install.sh flag works here too: sh bootstrap.sh --server
 ```

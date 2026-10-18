@@ -8,7 +8,7 @@
 #  clones the repo, and hands off to install.sh.
 #
 #  Fetch it, read it, then run it:
-#    curl -fsSLO https://raw.githubusercontent.com/morandeirachema/zsh/main/bootstrap.sh
+#    curl -fsSLO https://raw.githubusercontent.com/morandeirachema/console/main/bootstrap.sh
 #    less bootstrap.sh
 #    sh bootstrap.sh [options] [install.sh flags...]
 #
@@ -26,7 +26,7 @@
 # ============================================================
 set -eu
 
-REPO_URL="https://github.com/morandeirachema/zsh.git"
+REPO_URL="https://github.com/morandeirachema/console.git"
 DEST="${CONSOLE_DIR:-$HOME/code/console}"
 DRY=0; NO_INSTALL=0
 REST=""   # flags forwarded to install.sh
