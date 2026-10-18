@@ -9,6 +9,10 @@
 # release, so a network / API-rate-limit miss must not fail the build).
 set -uo pipefail
 
+# Release-binary fallbacks (sesh, superfile, atuin, lazygit, fabric…) install into
+# ~/.local/bin; the real shell gets that on PATH from .zshrc, the CI container does not.
+export PATH="$HOME/.local/bin:$PATH"
+
 name="${1:-?}"
 fail=0
 ok()   { printf '  \xe2\x9c\x93 %s\n' "$1"; }             # green-ish check

@@ -26,7 +26,8 @@ for p in \
   "$HOME/.local/bin/sesh-picker" \
   "$cfg/alacritty/alacritty.toml" \
   "$cfg/kitty/kitty.conf" \
-  "$cfg/lazygit/config.yml"; do
+  "$cfg/lazygit/config.yml" \
+  "$cfg/nvim"; do
   # -L catches a leftover (even dangling) symlink; -e catches any leftover file.
   if [ -L "$p" ] || [ -e "$p" ]; then bad "still present after uninstall: $p"
   else ok "removed: ${p#"$HOME"/}"; fi
