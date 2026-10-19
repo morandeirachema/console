@@ -15,6 +15,8 @@ is zinit (plugins) + starship (prompt) + fzf + zoxide + eza/bat.
 ./install.sh --minimal       # zsh + plugins + prompt + fzf/bat/fd/rg; skips eza, the extras block, terminals, nvim, font
 ./install.sh --no-font       # skip the Nerd Font download
 ./install.sh --no-chsh       # don't change the default login shell
+./install.sh --doctor        # health check; exit 1 when something needs fixing (CI asserts this)
+./uninstall.sh --dry-run     # preview the undo
 exec zsh                     # reload the shell after editing config
 
 # Validate before committing (there are no unit tests — syntax-check instead):

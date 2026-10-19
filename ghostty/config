@@ -16,6 +16,10 @@ background-opacity = 0.98
 scrollback-limit = 52428800
 confirm-close-surface = false
 
+# --- macOS: make Option behave as Alt, or Alt-C (fzf cd), Alt-F/Alt-B and tmux's Alt-arrows
+#     type accented characters instead. Ignored on Linux.
+macos-option-as-alt = true
+
 # --- cursor ---
 cursor-style = block
 cursor-style-blink = false

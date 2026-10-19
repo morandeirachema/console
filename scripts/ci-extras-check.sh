@@ -37,6 +37,11 @@ fi
 # --- pass installed ---
 command -v pass >/dev/null && ok "pass installed" || bad "pass missing"
 
+# --- core tools the docs promise (packages or verified release fallbacks) ---
+for t in lazygit delta eza tmux carapace jq yq direnv zoxide starship; do
+  command -v "$t" >/dev/null && ok "$t installed" || bad "$t missing"
+done
+
 # --- fzf preview opts get exported when aliases are sourced (needs fzf) ---
 if command -v fzf >/dev/null; then
   if zsh -c 'source zsh/aliases.zsh; [[ -n $FZF_CTRL_T_OPTS && -n $FZF_ALT_C_OPTS && -n $FZF_CTRL_R_OPTS ]]'; then

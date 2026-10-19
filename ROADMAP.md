@@ -177,7 +177,9 @@ Ideas taken from three Mischa van den Burg videos (see
 - Full byte-reproducible plugin lockfile (see *P1 — last mile*).
 - Pin release-binary versions (fabric/lazygit/neovim/carapace/atuin/sesh/superfile/tree-sitter
   fetch `latest`) for reproducibility, mirroring `ZINIT_PIN`.
-- Pin the tmux plugins (tpm/resurrect/continuum are cloned from `main`) the same way.
+- Pin the tmux plugins (tpm/resurrect/continuum are cloned from `main`) and the zinit plugins
+  (`ver"<sha>"` ice) the same way; replace the zoxide `curl | sh` fallback with its release
+  tarball + checksum like the other helpers.
 - **All video-idea P1/P2 items are done** (see [`IDEAS-FROM-VIDEOS.md`](IDEAS-FROM-VIDEOS.md)):
   fabric · pass · tmux-sessionizer · fzf previews · Alacritty · SSH port-forward
   helpers · **NAS sync** (`nas-sync` rsyncs `~/backup` + the `pass` store to a

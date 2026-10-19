@@ -2,9 +2,13 @@
 # uninstall.sh — reverse what install.sh did: remove the symlinks it created and
 # the git-delta include. Your ~/.zshrc.pre-console.<ts> backups are left in place.
 # Does NOT uninstall packages (they may be used by other things).
+#   --dry-run   print what would be removed, change nothing
 set -euo pipefail
+DRY=0; [ "${1:-}" = "--dry-run" ] && DRY=1
 
-REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# physical path (-P): readlink -f below resolves symlinks too, so a clone reached via a symlinked
+# directory is still recognised as ours
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 c()    { printf '\033[%sm' "$1"; }
 info() { printf '%s▶%s %s\n' "$(c '1;36')" "$(c 0)" "$*"; }
 ok()   { printf '%s✓%s %s\n' "$(c '1;32')" "$(c 0)" "$*"; }
@@ -16,7 +20,7 @@ unlink_if_ours() {
   if [ -L "$dst" ]; then
     tgt="$(readlink -f "$dst" 2>/dev/null || true)"
     case "$tgt" in
-      "$REPO_DIR"/*) rm -f "$dst"; ok "removed symlink $dst" ;;
+      "$REPO_DIR"/*) if [ "$DRY" -eq 1 ]; then info "[dry-run] would remove symlink $dst"; else rm -f "$dst"; ok "removed symlink $dst"; fi ;;
       *) warn "left $dst (points outside this repo)" ;;
     esac
   elif [ -e "$dst" ]; then
@@ -46,19 +50,24 @@ unlink_if_ours "$CONFIG/nvim"
 # --xdg appended one `export ZDOTDIR="<config>/zsh"` line to ~/.zshenv — remove exactly that line
 # so zsh goes back to reading ~/.zshrc (a restored backup, or nothing).
 if [ -f "$HOME/.zshenv" ] && grep -qF "export ZDOTDIR=\"$CONFIG/zsh\"" "$HOME/.zshenv"; then
-  grep -vF "export ZDOTDIR=\"$CONFIG/zsh\"" "$HOME/.zshenv" > "$HOME/.zshenv.tmp" && mv "$HOME/.zshenv.tmp" "$HOME/.zshenv"
-  ok "removed the --xdg ZDOTDIR line from ~/.zshenv"
+  if [ "$DRY" -eq 1 ]; then info "[dry-run] would remove the --xdg ZDOTDIR line from ~/.zshenv"
+  else
+    grep -vF "export ZDOTDIR=\"$CONFIG/zsh\"" "$HOME/.zshenv" > "$HOME/.zshenv.tmp" && mv "$HOME/.zshenv.tmp" "$HOME/.zshenv"
+    ok "removed the --xdg ZDOTDIR line from ~/.zshenv"
+  fi
 fi
 
 # Remove the git-delta include (leave the rest of ~/.gitconfig untouched).
 frag="$REPO_DIR/git/delta.gitconfig"
 if git config --global --get-all include.path 2>/dev/null | grep -qxF "$frag"; then
+  [ "$DRY" -eq 1 ] && info "[dry-run] would remove the git-delta include from ~/.gitconfig" ||
   git config --global --unset-all include.path "$frag" 2>/dev/null \
     && ok "removed git-delta include" \
     || warn "could not auto-remove the include — edit ~/.gitconfig by hand"
 fi
 
 echo
+[ "$DRY" -eq 1 ] && { info "[dry-run] nothing was changed"; exit 0; }
 ok "Uninstalled. Packages and plugins were left in place."
 info "Restore your previous config from the newest console backup, if any:"
 BACKUPS="$HOME/backup/zsh"

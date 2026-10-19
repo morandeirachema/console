@@ -13,6 +13,17 @@ they landed on `main`. Newest first.
   "console (WSL)" profile using the Nerd Font. WSL-only `open`, `pbcopy`, `pbpaste` and `winhome` helpers.
   README and MANUAL gained a Windows section.
 - `Ctrl-→` / `Ctrl-←` move by word (and accept one word of an autosuggestion); `Alt-F`/`Alt-B` already did.
+- CI now proves more: an offline unit test that every release helper refuses a bad checksum
+  (`scripts/ci-checksum-check.sh`); a real interactive-zsh check (zinit cloned, turbo plugins loaded,
+  `Ctrl-T`/`Tab`/`Ctrl-R` bound, starship renders) replacing `zsh -ic exit`; a lifecycle check (second
+  install idempotent, `--doctor` clean after install, tmux/sesh-picker wired, uninstall twice, delta
+  include removed, README restore recipe); an `--xdg` leg; a truly offline leg (all connections
+  refused); an openSUSE/zypper leg; checkouts pinned by SHA with `persist-credentials: false`.
+- `./uninstall.sh --dry-run` previews the undo. `./install.sh --doctor` now exits 1 when something needs
+  fixing (and treats font/nvim/fabric as optional under `--no-font`/`--no-nvim`/`--no-fabric`), so CI and
+  scripts can assert on it; CI checks that an empty HOME yields exit 1.
+- **Option-as-Alt on macOS** in all three terminal presets (Ghostty, Alacritty, kitty): without it `Alt-C`,
+  `Alt-F` and tmux's `Alt`+arrows typed accented characters on a Mac.
 
 - **Ghostty** is the terminal `install.sh` installs on desktops (`ghostty/config`, Catppuccin Mocha +
   JetBrainsMono Nerd Font, `ssh-terminfo` so `TERM=xterm-ghostty` works on servers). `--no-ghostty` skips it.
@@ -42,6 +53,13 @@ they landed on `main`. Newest first.
 
 ### Fixed
 
+- Security audit: release downloads **fail closed** (a missing or incomplete checksum file now refuses
+  the install instead of warning); `ZINIT_PIN` actually works (the pin is fetched into the shallow clone;
+  failures are reported); backups under `~/backup/zsh` are created `700`/owner-only and a partial backup is
+  discarded so `link()` never replaces a config it could not fully save; `~/.zshrc.local` is refused when
+  group/world-writable; tmux-resurrect saves only program names, not arguments; the imported history is
+  pruned with atuin's filters; `uninstall.sh` resolves the repo path physically so a symlinked clone is
+  still recognised.
 - Two independent review passes after the terminal work: install.sh now puts `~/.local/bin` on its own
   PATH (release-binary fallbacks were invisible to the same run and to the CI checks); the one-time history
   import uses `atuin import zsh` (the installer runs from bash, so `auto` imported the wrong shell); atuin's

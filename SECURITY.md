@@ -17,6 +17,20 @@ less safe. See [`ROADMAP.md`](ROADMAP.md) for what's still planned.
   `Enter` in the picker edits the line, it never runs it (`enter_accept = false`), and
   atuin's hosted-AI key binding is disabled (`--disable-ai`).
 - **superfile** has `auto_check_update = false`; **sesh** makes no network calls.
+- **Imported history is not filtered.** The installer's one-time `atuin import` copies your
+  existing `~/.zsh_history` as-is, then runs `atuin history prune` so entries matching the
+  secrets/leading-space filters are deleted again; filters otherwise apply only at record time.
+- **tmux-resurrect** saves window layouts every 15 min. Pane *contents* are off, and the
+  save strategy is `pane_current_command`, so only the program name (`nvim`, `ssh`) is written to
+  `~/.tmux/resurrect/`, never its arguments (which can carry passwords or tokens).
+- **Clipboard over SSH:** tmux has `set-clipboard on`, so programs inside a pane (nvim, a remote
+  shell) can write your local clipboard through OSC 52 — that is what makes yank-over-SSH work,
+  and it also means a hostile file `cat`ed on a server could replace what you are about to paste.
+  On boxes where that matters, set `set -g set-clipboard external` in `~/.tmux.conf.local` or the
+  repo file: tmux's own copy-mode still reaches the clipboard, applications no longer can.
+- **`~/.zshrc.local` is sourced only if you own it *and* it is not group/world-writable**;
+  the same expectation applies to the repo clone and `~/.local/bin` (first on `PATH`): keep them
+  `755`, owned by you.
 - **Never commit secrets.** Machine-specific values (tokens, private paths, work
   aliases) go in `~/.zshrc.local`, which is git-ignored and sourced **only if you
   own it** (guards against another account planting one). Start from
@@ -34,17 +48,28 @@ less safe. See [`ROADMAP.md`](ROADMAP.md) for what's still planned.
   you to fetch it, read it, then run it — so the same posture applies to this repo's
   own front door. It refuses to overwrite a non-git directory, and `--dry-run`
   prints every step without touching the disk.
-- **Release binaries are checksum-verified**: lazygit, neovim, carapace, fabric, atuin,
-  sesh, superfile, the tree-sitter CLI and the Nerd Font zip are SHA256-checked against
-  their published checksums and refused on mismatch. Version lookups hit the GitHub API and use `GITHUB_TOKEN`/`GH_TOKEN`
+- **Release binaries are checksum-verified and fail closed**: lazygit, neovim, carapace,
+  fabric, atuin, sesh, superfile, the tree-sitter CLI and the Nerd Font zip are SHA256-checked
+  against their published checksums and refused on mismatch — and also refused when the
+  checksum file cannot be fetched or does not list the asset (no silent "unverified" path).
+  CI unit-tests the refusal offline (`scripts/ci-checksum-check.sh`). Version lookups hit the GitHub API and use `GITHUB_TOKEN`/`GH_TOKEN`
   when set (only to lift the anonymous rate limit; the token is never sent to the
   download CDN).
 - **Pin zinit** for reproducible/air-gapped builds by exporting `ZINIT_PIN=<sha>`
-  before the shell starts (e.g. in `~/.zshenv`).
+  before the shell starts (in `~/.zshenv`, not `~/.zshrc.local`). The pin is fetched
+  explicitly into the shallow clone; a pin that cannot be fetched is reported, not ignored.
+  The zinit *plugins*, tpm and its plugins still track their default branches — pinning them
+  is on the roadmap.
+- **Arch note:** `pkg_install` runs `pacman -Syu --needed`, i.e. a full system upgrade
+  alongside the requested packages, because `-Sy` + `-S` partial upgrades are unsupported on Arch.
 - **Air-gapped:** run `./install.sh --offline` to skip every internet fetch
-  (packages then come from your internal mirror). The one remaining network step
-  is zinit cloning itself + plugins on first shell launch — pre-seed
-  `~/.local/share/zinit` and the plugin repos on locked-down hosts.
+  (packages then come from your internal mirror). The remaining network steps happen
+  on first *launch*, not install: zinit cloning itself + plugins on the first shell, and
+  lazy.nvim cloning LazyVim + plugins on the first `nvim` (lazy's update checker also
+  polls GitHub periodically). Pre-seed `~/.local/share/zinit` (`scripts/vendor-plugins.sh`)
+  and `~/.local/share/nvim` on locked-down hosts, or keep nvim off them (`--no-nvim`).
+- **CI** checks out with `persist-credentials: false` and pins actions by commit SHA, so the
+  read-only token never lands in the `.git/config` that is bind-mounted into the test containers.
 
 ## Completions & PATH
 

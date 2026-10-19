@@ -63,7 +63,12 @@ if [[ ! -d "$ZINIT_HOME" && ! -e "$ZINIT_FAILED" ]]; then
   command mkdir -p "${ZINIT_HOME:h}"
   if command git clone --depth 1 https://github.com/zdharma-continuum/zinit.git "$ZINIT_HOME"; then
     print -P "%F{green}▓▒░ zinit installed.%f"
-    [[ -n "$ZINIT_PIN" ]] && command git -C "$ZINIT_HOME" checkout -q "$ZINIT_PIN" 2>/dev/null
+    # a --depth 1 clone only holds the tip: fetch the pinned commit explicitly, and say so if it fails
+    if [[ -n "$ZINIT_PIN" ]]; then
+      command git -C "$ZINIT_HOME" fetch -q --depth 1 origin "$ZINIT_PIN" 2>/dev/null \
+        && command git -C "$ZINIT_HOME" checkout -q FETCH_HEAD 2>/dev/null \
+        || print -P "%F{red}▓▒░ ZINIT_PIN=$ZINIT_PIN could not be fetched — running zinit at its tip%f"
+    fi
   else
     print -P "%F{red}▓▒░ zinit clone failed — plugins off. Retry: rm $ZINIT_FAILED%f"
     command rm -rf "$ZINIT_HOME"; : >| "$ZINIT_FAILED"
@@ -186,8 +191,16 @@ fi
 [[ -f "$ZDOTREPO/aliases.zsh" ]] && source "$ZDOTREPO/aliases.zsh"
 # Machine-specific, NOT committed to the repo (secrets, local paths).
 # Only sourced if owned by the current user (guards against another account
-# planting a ~/.zshrc.local that would run in your shell).
-[[ -f "$HOME/.zshrc.local" && -O "$HOME/.zshrc.local" ]] && source "$HOME/.zshrc.local"
+# planting a ~/.zshrc.local that would run in your shell) and not group/world-writable
+# (so nobody else can edit it into your shell either).
+if [[ -f "$HOME/.zshrc.local" && -O "$HOME/.zshrc.local" ]]; then
+  zmodload -F zsh/stat b:zstat 2>/dev/null
+  if (( ! ($(zstat +mode "$HOME/.zshrc.local" 2>/dev/null || echo 0) & 8#022) )); then
+    source "$HOME/.zshrc.local"
+  else
+    print -u2 "console: ~/.zshrc.local is group/world-writable — not sourced (chmod 600 it)"
+  fi
+fi
 
 # Leave a fresh shell at $?=0 so the first prompt isn't a false error.
 true

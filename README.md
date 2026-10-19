@@ -138,7 +138,7 @@ already zsh, so it isn't changed; the font is installed via `brew --cask`.
 | Flag | Effect |
 | ---- | ------ |
 | `--dry-run` | print every package/symlink/change the run **would** make — touch nothing |
-| `--doctor` | health check: report tools, symlinks, font, git config — then exit |
+| `--doctor` | health check: tools, symlinks, font, git config; exits 1 if anything needs fixing (add `--no-font`/`--no-nvim`/`--no-fabric` to mark those optional) |
 | `--minimal` | zsh + plugins + prompt + fzf/bat/fd/rg only (skip eza, delta, tldr, lazygit, atuin, sesh, spf, tmux, nvim, terminals, font) |
 | `--server` | headless box: skip the Nerd Font **and** every terminal config (they live on your client) |
 | `--offline` | air-gapped: no internet fetches — packages come from your mirror |
@@ -721,7 +721,8 @@ Tool-specific aliases only exist when the tool is installed.
 | -------- | -- |
 | **See what a run would change** | `./install.sh --dry-run` — prints everything, changes nothing |
 | **Check an existing setup** | `./install.sh --doctor` — tools, symlinks, font, git config |
-| **Undo the install** | `./uninstall.sh` — removes only symlinks into this repo + the git-delta include |
+| **Preview the undo** | `./uninstall.sh --dry-run` — lists what would be removed, changes nothing |
+| **Undo the install** | `./uninstall.sh` — removes only symlinks into this repo + the git-delta include (+ the `--xdg` line) |
 | **Get your old configs back** | restore from the dated backup (below) |
 
 ### The pre-change backup

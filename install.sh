@@ -3,7 +3,8 @@
 #  install.sh — bootstrap chema's zsh console on any Linux or macOS box
 #  Usage: ./install.sh [--dry-run] [--doctor] [--minimal] [--server] [--offline] [--xdg] [--no-nvim] [--no-fabric] [--no-ghostty] [--no-alacritty] [--no-kitty] [--no-font] [--no-chsh] [-y]
 #    --dry-run      show every package/symlink/change this run WOULD make — touch nothing
-#    --doctor       health check: report installed tools, symlinks, font, git config — then exit
+#    --doctor       health check: tools, symlinks, font, git config — exit 1 if anything needs fixing
+#                   (combine with --no-font/--no-nvim/--no-fabric to mark those as optional)
 #    --minimal      zsh + plugins + prompt + fzf/bat/fd/rg only (skip eza/delta/tldr/lazygit/atuin/sesh/spf/tmux/nvim/terminals/font)
 #    --server       headless box: skip the Nerd Font + all terminal configs (they live on your client)
 #    --offline      air-gapped: no internet fetches — packages must come from your mirror,
@@ -120,11 +121,13 @@ install_lazygit_release() {   # https://github.com/jesseduffield/lazygit
        "https://github.com/jesseduffield/lazygit/releases/download/v${ver}/checksums.txt"; then
     want="$(grep -E "  lazygit_${ver}_${arch}\.tar\.gz$" "$tmp/sums" | awk '{print $1}' | head -1)"
     got="$(sha256_of "$tmp/lg.tgz")"
-    if [ -n "$want" ] && [ "$want" != "$got" ]; then
+    if [ -z "$want" ]; then
+      warn "lazygit: asset not listed in the release checksums — refusing to install"; rm -rf "$tmp"; return 1
+    elif [ "$want" != "$got" ]; then
       warn "lazygit checksum mismatch — refusing to install"; rm -rf "$tmp"; return 1
     fi
   else
-    warn "could not fetch lazygit checksums — installing unverified"
+    warn "could not fetch lazygit checksums — refusing to install"; rm -rf "$tmp"; return 1
   fi
   tar xzf "$tmp/lg.tgz" -C "$tmp" lazygit || { rm -rf "$tmp"; return 1; }
   mkdir -p "$HOME/.local/bin"; install "$tmp/lazygit" "$HOME/.local/bin/lazygit"
@@ -152,11 +155,13 @@ install_atuin_release() {     # https://github.com/atuinsh/atuin/releases
        "https://github.com/atuinsh/atuin/releases/download/v${ver}/${asset}.sha256"; then
     want="$(awk '{print $1}' "$tmp/sum" | head -1)"
     got="$(sha256_of "$tmp/atuin.tgz")"
-    if [ -n "$want" ] && [ "$want" != "$got" ]; then
+    if [ -z "$want" ]; then
+      warn "atuin: asset not listed in the release checksums — refusing to install"; rm -rf "$tmp"; return 1
+    elif [ "$want" != "$got" ]; then
       warn "atuin checksum mismatch — refusing to install"; rm -rf "$tmp"; return 1
     fi
   else
-    warn "could not fetch atuin checksum — installing unverified"
+    warn "could not fetch atuin checksums — refusing to install"; rm -rf "$tmp"; return 1
   fi
   tar xzf "$tmp/atuin.tgz" -C "$tmp" || { rm -rf "$tmp"; return 1; }
   mkdir -p "$HOME/.local/bin"
@@ -183,11 +188,13 @@ install_sesh_release() {      # https://github.com/joshmedeski/sesh/releases
        "https://github.com/joshmedeski/sesh/releases/download/v${ver}/sesh_${ver}_checksums.txt"; then
     want="$(grep -E "  sesh_${arch}\.tar\.gz$" "$tmp/sums" | awk '{print $1}' | head -1)"
     got="$(sha256_of "$tmp/sesh.tgz")"
-    if [ -n "$want" ] && [ "$want" != "$got" ]; then
+    if [ -z "$want" ]; then
+      warn "sesh: asset not listed in the release checksums — refusing to install"; rm -rf "$tmp"; return 1
+    elif [ "$want" != "$got" ]; then
       warn "sesh checksum mismatch — refusing to install"; rm -rf "$tmp"; return 1
     fi
   else
-    warn "could not fetch sesh checksums — installing unverified"
+    warn "could not fetch sesh checksums — refusing to install"; rm -rf "$tmp"; return 1
   fi
   tar xzf "$tmp/sesh.tgz" -C "$tmp" sesh || { rm -rf "$tmp"; return 1; }
   mkdir -p "$HOME/.local/bin"; install "$tmp/sesh" "$HOME/.local/bin/sesh"
@@ -214,11 +221,13 @@ install_superfile_release() { # https://github.com/yorukot/superfile/releases
        "https://github.com/yorukot/superfile/releases/download/v${ver}/superfile-v${ver}-checksums.txt"; then
     want="$(grep -F "$asset" "$tmp/sums" | awk '{print $1}' | head -1)"
     got="$(sha256_of "$tmp/spf.tgz")"
-    if [ -n "$want" ] && [ "$want" != "$got" ]; then
+    if [ -z "$want" ]; then
+      warn "superfile: asset not listed in the release checksums — refusing to install"; rm -rf "$tmp"; return 1
+    elif [ "$want" != "$got" ]; then
       warn "superfile checksum mismatch — refusing to install"; rm -rf "$tmp"; return 1
     fi
   else
-    warn "could not fetch superfile checksums — installing unverified"
+    warn "could not fetch superfile checksums — refusing to install"; rm -rf "$tmp"; return 1
   fi
   tar xzf "$tmp/spf.tgz" -C "$tmp" || { rm -rf "$tmp"; return 1; }
   bin="$(find "$tmp" -type f -name spf | head -1)"
@@ -246,11 +255,13 @@ install_carapace_release() {  # https://github.com/carapace-sh/carapace-bin
        "https://github.com/carapace-sh/carapace-bin/releases/download/v${ver}/carapace-bin_${ver}_checksums.txt"; then
     want="$(grep -F "carapace-bin_${ver}_linux_${arch}.tar.gz" "$tmp/sums" | awk '{print $1}' | head -1)"
     got="$(sha256_of "$tmp/cb.tgz")"
-    if [ -n "$want" ] && [ "$want" != "$got" ]; then
+    if [ -z "$want" ]; then
+      warn "carapace: asset not listed in the release checksums — refusing to install"; rm -rf "$tmp"; return 1
+    elif [ "$want" != "$got" ]; then
       warn "carapace checksum mismatch — refusing to install"; rm -rf "$tmp"; return 1
     fi
   else
-    warn "could not fetch carapace checksums — installing unverified"
+    warn "could not fetch carapace checksums — refusing to install"; rm -rf "$tmp"; return 1
   fi
   tar xzf "$tmp/cb.tgz" -C "$tmp" carapace || { rm -rf "$tmp"; return 1; }
   mkdir -p "$HOME/.local/bin"; install "$tmp/carapace" "$HOME/.local/bin/carapace"
@@ -283,11 +294,13 @@ install_fabric_release() {    # https://github.com/danielmiessler/fabric
        "https://github.com/danielmiessler/fabric/releases/download/v${ver}/fabric_${ver}_checksums.txt"; then
     want="$(grep -F "$asset" "$tmp/sums" | awk '{print $1}' | head -1)"
     got="$(sha256_of "$tmp/fabric.tgz")"
-    if [ -n "$want" ] && [ "$want" != "$got" ]; then
+    if [ -z "$want" ]; then
+      warn "fabric: asset not listed in the release checksums — refusing to install"; rm -rf "$tmp"; return 1
+    elif [ "$want" != "$got" ]; then
       warn "fabric checksum mismatch — refusing to install"; rm -rf "$tmp"; return 1
     fi
   else
-    warn "could not fetch fabric checksums — installing unverified"
+    warn "could not fetch fabric checksums — refusing to install"; rm -rf "$tmp"; return 1
   fi
   tar xzf "$tmp/fabric.tgz" -C "$tmp" fabric || { rm -rf "$tmp"; return 1; }
   mkdir -p "$HOME/.local/bin"; install "$tmp/fabric" "$HOME/.local/bin/fabric"
@@ -315,11 +328,13 @@ install_neovim_release() {    # https://github.com/neovim/neovim/releases
        "https://github.com/neovim/neovim/releases/latest/download/${asset}.tar.gz.sha256sum"; then
     want="$(awk '{print $1}' "$tmp/nvim.sha" | head -1)"
     got="$(sha256_of "$tmp/nvim.tgz")"
-    if [ -n "$want" ] && [ "$want" != "$got" ]; then
+    if [ -z "$want" ]; then
+      warn "neovim: asset not listed in the release checksums — refusing to install"; rm -rf "$tmp"; return 1
+    elif [ "$want" != "$got" ]; then
       warn "neovim checksum mismatch — refusing to install"; rm -rf "$tmp"; return 1
     fi
   else
-    warn "could not fetch neovim checksum — installing unverified"
+    warn "could not fetch neovim checksums — refusing to install"; rm -rf "$tmp"; return 1
   fi
   tar xzf "$tmp/nvim.tgz" -C "$tmp" || { rm -rf "$tmp"; return 1; }
   mkdir -p "$HOME/.local/bin"; rm -rf "$HOME/.local/nvim-dist"
@@ -363,7 +378,7 @@ install_tree_sitter_release() {  # https://github.com/tree-sitter/tree-sitter/re
       warn "tree-sitter checksum mismatch — refusing to install"; rm -rf "$tmp"; return 1
     fi
   else
-    warn "no SHA256 digest for $asset in the release metadata — installing unverified"
+    warn "no SHA256 digest for $asset in the release metadata — refusing to install"; rm -rf "$tmp"; return 1
   fi
   gunzip -c "$tmp/ts.gz" > "$tmp/tree-sitter" || { rm -rf "$tmp"; return 1; }
   mkdir -p "$HOME/.local/bin"; install "$tmp/tree-sitter" "$HOME/.local/bin/tree-sitter"
@@ -435,9 +450,12 @@ snapshot() {
     fi
     rel="${src#"$HOME"/}"; dest="$BACKUP_DIR/$rel"
     mkdir -p "$(dirname "$dest")"
-    if cp -a "$src" "$dest" 2>/dev/null; then any=1; log "backed up $src -> $dest"
-    else warn "could not back up $src"; fi
+    # backups hold .gitconfig/.zshrc with whatever tokens they carry: owner-only, and a partial
+    # copy is discarded so link() never treats a half-saved config as "safe to replace"
+    if cp -a "$src" "$dest" 2>/dev/null; then any=1; chmod -R go-rwx "$dest" 2>/dev/null; log "backed up $src -> $dest"
+    else warn "could not back up $src (left in place)"; rm -rf "$dest"; fi
   done
+  chmod 700 "$HOME/backup" "$HOME/backup/zsh" "$BACKUP_DIR" 2>/dev/null || true
   if [ "$any" -eq 1 ]; then ok "Backed up your current config → $BACKUP_DIR"
   else info "No existing config to back up (fresh setup)."; fi
 }
@@ -473,7 +491,9 @@ doctor() {
 
   dh "CLI tools"
   for t in fzf zoxide eza rg delta lazygit atuin sesh spf jq yq direnv carapace tmux pass fabric; do
-    have "$t" && dg "$t" || dn "$t missing"
+    if have "$t"; then dg "$t"
+    elif [ "$t" = fabric ] && [ "$NO_FABRIC" -eq 1 ]; then do_ "fabric not installed (optional: --no-fabric)"
+    else dn "$t missing"; fi
   done
   # Debian/Ubuntu ship bat as `batcat` and fd as `fdfind`; count either as present.
   have bat && dg "bat" || { have batcat && dg "bat (batcat)" || dn "bat missing"; }
@@ -485,8 +505,11 @@ doctor() {
     local nst; nst="$(mktemp -d)"
     dg "nvim ($(XDG_STATE_HOME="$nst" nvim --version 2>/dev/null | sed -n 1p))"
     rm -rf "$nst"
+  elif [ "$NO_NVIM" -eq 1 ]; then do_ "nvim not installed (optional: --no-nvim)"
   else dn "nvim missing"; fi
-  have tree-sitter && dg "tree-sitter CLI" || dn "tree-sitter CLI missing (nvim can't build parsers)"
+  if have tree-sitter; then dg "tree-sitter CLI"
+  elif [ "$NO_NVIM" -eq 1 ]; then do_ "tree-sitter CLI not installed (optional: --no-nvim)"
+  else dn "tree-sitter CLI missing (nvim can't build parsers)"; fi
   have_ghostty && dg "ghostty" || do_ "ghostty not installed (optional; expected on servers)"
   have alacritty && dg "alacritty" || do_ "alacritty not installed (optional; config still linked if you use it)"
   have kitty && dg "kitty" || do_ "kitty not installed (optional; config still linked if you use it)"
@@ -515,6 +538,7 @@ doctor() {
     # fc-list on a big font list under `pipefail`, giving a false "not found".
     if [ "$(fc-list 2>/dev/null | grep -ci 'JetBrainsMono Nerd Font')" -gt 0 ]; then
       dg "JetBrainsMono Nerd Font installed"
+    elif [ "$NO_FONT" -eq 1 ]; then do_ "JetBrainsMono Nerd Font not installed (optional: --no-font / --server)"
     else
       dn "JetBrainsMono Nerd Font not found (set your terminal font, or re-run without --no-font)"
     fi
@@ -525,15 +549,18 @@ doctor() {
 
   dh "Local overrides"
   if [ -f "$HOME/.zshrc.local" ]; then
-    [ -O "$HOME/.zshrc.local" ] && dg "found ~/.zshrc.local — owned by you" \
-      || dx "wrong owner on ~/.zshrc.local → .zshrc will refuse to source it"
+    if [ ! -O "$HOME/.zshrc.local" ]; then dx "wrong owner on ~/.zshrc.local → .zshrc will refuse to source it"
+    elif [ -n "$(find "$HOME/.zshrc.local" -perm -o+w -o -perm -g+w 2>/dev/null)" ]; then
+      dx "group/world-writable ~/.zshrc.local → .zshrc will refuse to source it (chmod 600)"
+    else dg "found ~/.zshrc.local — owned by you, not writable by others"; fi
   else do_ "no ~/.zshrc.local yet (optional; template: zsh/zshrc.local.example)"; fi
 
   dh "Summary"
-  if [ "$issues" -eq 0 ]; then printf '  %sall good — nothing to fix%s\n' "$G" "$Z"
-  else printf '  %s%d item(s) worth a look%s — run ./install.sh to fix most\n' "$Y" "$issues" "$Z"; fi
+  if [ "$issues" -eq 0 ]; then printf '  %sall good — nothing to fix%s\n' "$G" "$Z"; return 0
+  else printf '  %s%d item(s) worth a look%s — run ./install.sh to fix most\n' "$Y" "$issues" "$Z"; return 1; fi
 }
-if [ "$DOCTOR" -eq 1 ]; then set +e; doctor; exit 0; fi
+# exit 1 when something needs fixing, so scripts and CI can assert on it
+if [ "$DOCTOR" -eq 1 ]; then set +e; doctor; exit $?; fi
 
 info "Repo:            $REPO_DIR"
 [ "$IS_WSL" -eq 1 ] && info "WSL detected:    Nerd Font + terminal live on Windows — see README › Windows (WSL)"
@@ -764,8 +791,10 @@ if [ "$NO_FONT" -eq 0 ]; then
       if curl -sSfL -o "$tmp/SHA-256.txt" \
           https://github.com/ryanoasis/nerd-fonts/releases/latest/download/SHA-256.txt; then
         want="$(grep -E 'JetBrainsMono\.zip$' "$tmp/SHA-256.txt" | awk '{print $1}' | head -1)"
-      else warn "could not fetch the font checksums — installing unverified"; fi
-      if [ -n "$want" ] && [ "$want" != "$got" ]; then
+      fi
+      if [ -z "$want" ]; then
+        warn "no checksum available for JetBrainsMono.zip — refusing to install (rerun, or --no-font)"
+      elif [ "$want" != "$got" ]; then
         warn "Nerd Font checksum mismatch — refusing to install (rerun, or --no-font)"
       else
         unzip -oq "$tmp/JBM.zip" -d "$FONT_DIR"
@@ -846,8 +875,12 @@ if [ "$MINIMAL" -eq 0 ]; then
   link "$REPO_DIR/atuin/config.toml" "$CFG/atuin/config.toml"
   if have atuin && [ ! -s "${XDG_DATA_HOME:-$HOME/.local/share}/atuin/history.db" ]; then
     info "Importing existing shell history into atuin (one time)…"
-    if [ -f "$HOME/.zsh_history" ]; then run atuin import zsh >/dev/null 2>&1 || warn "atuin import failed — run: atuin import zsh"
-    else run atuin import auto >/dev/null 2>&1 || warn "atuin import failed — run: atuin import auto"; fi
+    src=auto; [ -f "$HOME/.zsh_history" ] && src=zsh
+    if dry; then run atuin import "$src"
+    else
+      # imported lines bypass record-time filters — prune them with the same secrets/leading-space rules
+      { atuin import "$src" && atuin history prune; } >/dev/null 2>&1 || warn "atuin import failed — run: atuin import $src"
+    fi
   fi
 fi
 # kitty config (linked whether or not kitty is installed; skipped by --minimal/--server/--no-kitty)

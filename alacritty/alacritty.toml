@@ -11,6 +11,8 @@ dynamic_padding = true
 opacity = 0.98
 decorations = "full"
 dynamic_title = true
+# macOS: Option acts as Alt (Alt-C / Alt-F / tmux Alt-arrows); ignored on Linux
+option_as_alt = "Both"
 
 [scrolling]
 history = 50000

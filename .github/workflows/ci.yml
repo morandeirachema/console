@@ -14,7 +14,9 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false   # the checkout is bind-mounted into containers that run the PR's own scripts
       - name: Install zsh + shellcheck
         run: sudo apt-get update && sudo apt-get install -y zsh shellcheck
       - name: shellcheck (shell scripts)
@@ -52,17 +54,21 @@ jobs:
           # run against an isolated empty HOME so any stray write is detectable
           h="$(mktemp -d)"
           HOME="$h" ./install.sh --dry-run -y --no-chsh >/dev/null
-          HOME="$h" ./install.sh --doctor              >/dev/null
+          # an empty HOME has nothing linked, so --doctor must report problems (exit 1), not crash
+          HOME="$h" ./install.sh --doctor >/dev/null; rc=$?; [ "$rc" -eq 1 ] || { echo "doctor exit $rc, expected 1"; exit 1; }
+          HOME="$h" ./uninstall.sh --dry-run >/dev/null
           n="$(find "$h" -mindepth 1 | wc -l)"
           [ "$n" -eq 0 ] || { echo "::error::--dry-run/--doctor wrote $n entries to \$HOME"; find "$h" -mindepth 1; exit 1; }
           echo "✓ dry-run + doctor: exit 0, zero writes"
+      - name: Release helpers refuse a bad checksum (offline unit test)
+        run: bash scripts/ci-checksum-check.sh
       - name: markdownlint (docs)
         # pinned so a new release's rules can't turn CI red without a docs change
         run: npx --yes markdownlint-cli2@0.23.3 "**/*.md" "#node_modules"
       - name: Lua parse (nvim config)
         run: |
-          sudo apt-get install -y lua5.4 || sudo apt-get install -y lua5.3 || true
-          for f in $(find nvim -name '*.lua'); do luac5.4 -p "$f" || luac5.3 -p "$f" || echo "skip $f"; done
+          sudo apt-get install -y lua5.4
+          find nvim -name '*.lua' -print0 | xargs -0 -n1 luac5.4 -p
 
   smoke:
     needs: lint
@@ -75,30 +81,61 @@ jobs:
             image: ubuntu:24.04
             prep: apt-get update && apt-get install -y sudo git curl ca-certificates zsh
             args: --minimal --no-chsh -y
+            zshrc: /root/.zshrc
           - name: fedora
             image: fedora:latest
             prep: dnf install -y sudo git curl zsh
             args: --minimal --no-chsh -y
+            zshrc: /root/.zshrc
           - name: arch
             image: archlinux:latest
             prep: pacman -Sy --noconfirm sudo git curl zsh
             args: --minimal --no-chsh -y
+            zshrc: /root/.zshrc
+          - name: opensuse
+            image: opensuse/tumbleweed:latest
+            prep: zypper -n install sudo git curl zsh
+            args: --minimal --no-chsh -y
+            zshrc: /root/.zshrc
+          - name: ubuntu-xdg
+            image: ubuntu:24.04
+            prep: apt-get update && apt-get install -y sudo git curl ca-certificates zsh
+            args: --minimal --xdg --no-chsh -y
+            zshrc: /root/.config/zsh/.zshrc
+            # --xdg must add exactly one ZDOTDIR line, stay idempotent, and be fully reversible
+            post: |
+              [ "$(grep -c 'export ZDOTDIR=' "$HOME/.zshenv")" -eq 1 ] || { echo "::error::ZDOTDIR line count"; exit 1; }
+              ./install.sh --minimal --xdg --no-chsh -y >/dev/null
+              [ "$(grep -c 'export ZDOTDIR=' "$HOME/.zshenv")" -eq 1 ] || { echo "::error::ZDOTDIR duplicated on re-run"; exit 1; }
+              ./uninstall.sh >/dev/null
+              ! grep -q ZDOTDIR "$HOME/.zshenv" || { echo "::error::uninstall left the ZDOTDIR line"; exit 1; }
+              ! test -e "$HOME/.config/zsh/.zshrc" || { echo "::error::uninstall left the --xdg .zshrc"; exit 1; }
+              echo "xdg lifecycle OK"
           - name: ubuntu-offline
             image: ubuntu:24.04
             prep: apt-get update && apt-get install -y sudo git curl ca-certificates zsh
+            # every outbound connection is refused, so this leg PROVES --offline makes no fetch
+            pre: export http_proxy=http://127.0.0.1:9 https_proxy=http://127.0.0.1:9 HTTP_PROXY=http://127.0.0.1:9 HTTPS_PROXY=http://127.0.0.1:9 GIT_CONFIG_COUNT=1 GIT_CONFIG_KEY_0=http.proxy GIT_CONFIG_VALUE_0=http://127.0.0.1:9
             args: --offline --minimal --no-chsh -y
+            zshrc: /root/.zshrc
+            zshcheck: --offline
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false   # the checkout is bind-mounted into containers that run the PR's own scripts
       - name: Smoke test on ${{ matrix.name }}
         run: |
           docker run --rm -v "$PWD:/repo" -w /repo "${{ matrix.image }}" bash -ec '
             ${{ matrix.prep }}
+            ${{ matrix.pre }}
             ./install.sh ${{ matrix.args }}
             # `test … && echo` cannot fail a job under set -e (the failing command is
             # not the last of the AND-list, so it is exempt) — assert with || exit
-            test -L "$HOME/.zshrc"                || { echo "::error::~/.zshrc not symlinked";      exit 1; }
+            test -L "${{ matrix.zshrc }}"         || { echo "::error::${{ matrix.zshrc }} not symlinked"; exit 1; }
             test -L "$HOME/.config/starship.toml" || { echo "::error::starship.toml not symlinked"; exit 1; }
-            zsh -ic "exit 0"                      || { echo "::error::interactive zsh failed";      exit 1; }
+            # the shell must really start: zinit cloned, turbo plugins loaded, bindings present
+            bash scripts/ci-zsh-check.sh ${{ matrix.zshcheck }} || { echo "::error::interactive zsh check failed"; exit 1; }
+            ${{ matrix.post }}
             echo "smoke OK on ${{ matrix.name }}"
           '
 
@@ -111,12 +148,16 @@ jobs:
       HOMEBREW_NO_AUTO_UPDATE: 1
       HOMEBREW_NO_INSTALL_CLEANUP: 1
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false   # the checkout is bind-mounted into containers that run the PR's own scripts
       - name: --dry-run and --doctor exit 0 and touch nothing (brew path)
         run: |
           h="$(mktemp -d)"
           HOME="$h" ./install.sh --dry-run -y --no-chsh >/dev/null
-          HOME="$h" ./install.sh --doctor              >/dev/null
+          # an empty HOME has nothing linked, so --doctor must report problems (exit 1), not crash
+          HOME="$h" ./install.sh --doctor >/dev/null; rc=$?; [ "$rc" -eq 1 ] || { echo "doctor exit $rc, expected 1"; exit 1; }
+          HOME="$h" ./uninstall.sh --dry-run >/dev/null
           n="$(find "$h" -mindepth 1 | wc -l | tr -d ' ')"
           [ "$n" -eq 0 ] || { echo "::error::--dry-run/--doctor wrote $n entries to \$HOME"; find "$h" -mindepth 1; exit 1; }
           echo "✓ dry-run + doctor: exit 0, zero writes"
@@ -125,7 +166,7 @@ jobs:
           ./install.sh --minimal --no-chsh -y
           test -L "$HOME/.zshrc"                || { echo "::error::~/.zshrc not symlinked";      exit 1; }
           test -L "$HOME/.config/starship.toml" || { echo "::error::starship.toml not symlinked"; exit 1; }
-          zsh -ic "exit 0"                      || { echo "::error::interactive zsh failed";      exit 1; }
+          bash scripts/ci-zsh-check.sh          || { echo "::error::interactive zsh check failed"; exit 1; }
           echo "smoke OK on macOS"
 
   bootstrap:
@@ -142,7 +183,9 @@ jobs:
           - name: arch
             image: archlinux:latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false   # the checkout is bind-mounted into containers that run the PR's own scripts
       # The whole point of bootstrap.sh is a box with NO git: you can't clone the
       # repo that holds install.sh. These base images ship without git, so there is
       # deliberately no prep step here — bootstrap has to install git itself, clone,
@@ -181,7 +224,9 @@ jobs:
             image: archlinux:latest
             prep: pacman -Sy --noconfirm sudo git curl zsh
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false   # the checkout is bind-mounted into containers that run the PR's own scripts
       # Non-minimal install (minus the slow nvim + font) so the extras path is
       # actually exercised: pass, fabric (SHA256-verified GitHub release),
       # tmux-sessionizer symlink, and the fzf preview opts. Asserted by
@@ -195,6 +240,7 @@ jobs:
             echo PRE-INSTALL-MARKER > "$HOME/.zshrc"   # exercise the pre-change backup
             ./install.sh --no-nvim --no-font --no-chsh -y
             bash scripts/ci-extras-check.sh ${{ matrix.name }}
-            ./uninstall.sh
-            bash scripts/ci-uninstall-check.sh ${{ matrix.name }}
+            bash scripts/ci-zsh-check.sh
+            # second run idempotent, tmux/sesh-picker wired, uninstall twice, restore recipe
+            bash scripts/ci-lifecycle-check.sh ${{ matrix.name }} --no-nvim --no-font --no-chsh -y
           '

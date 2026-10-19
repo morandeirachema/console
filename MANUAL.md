@@ -85,7 +85,7 @@ sh bootstrap.sh         # accepts every install.sh flag, e.g. sh bootstrap.sh --
 | Flag | Effect |
 | ---- | ------ |
 | `--dry-run` | print every package, symlink and edit the run **would** make; touch nothing |
-| `--doctor` | health check: tools, symlinks, font, git include, zinit state; then exit |
+| `--doctor` | health check: tools, symlinks, font, git include, zinit state. Exits 1 when something needs fixing, so you can script it; `--no-font` / `--no-nvim` / `--no-fabric` mark those as optional |
 | `--minimal` | zsh + plugins + prompt + fzf/bat/fd/rg; skips eza, delta, tldr, lazygit, atuin, sesh, spf, jq/yq, direnv, carapace, tmux, pass, fabric, terminals, nvim, font |
 | `--server` | headless box: skip the Nerd Font and all terminal configs (they live on your client). WSL does this automatically |
 | `--offline` | air-gapped: no network fetches at all; packages must come from your mirror |
@@ -103,7 +103,8 @@ sh bootstrap.sh         # accepts every install.sh flag, e.g. sh bootstrap.sh --
 ### 1.4 Uninstall
 
 ```bash
-./uninstall.sh    # removes only symlinks that point into this repo + the delta include
+./uninstall.sh --dry-run   # list what would be removed, change nothing
+./uninstall.sh             # removes only symlinks that point into this repo, the delta include, the --xdg line
 ```
 
 Packages are left installed (other things may use them). Your pre-install backups stay in
@@ -663,6 +664,7 @@ cd ~/code/console && git pull && exec zsh      # the configs are symlinks: that 
 | `Ctrl-T` / `Alt-C` do nothing | fzf is too old or its key-bindings file is missing; `fzf --version` ≥ 0.48 fixes it, or install the distro's `fzf` package fully |
 | `bat`/`fd` "command not found" on Debian | they are `batcat`/`fdfind` there; the aliases handle it once the shell is reloaded |
 | over SSH: "unknown terminal xterm-ghostty" | Ghostty's `ssh-terminfo` feature could not copy the terminfo; run `infocmp -x xterm-ghostty \| ssh host tic -x -`, or `export TERM=xterm-256color` for that session |
+| `Alt-C`, `Alt-F` or tmux `Alt`+arrows type `ç`/`ƒ` on macOS | the terminal sends Option as a dead key; the shipped Ghostty/Alacritty/kitty presets set Option-as-Alt, so reload the config or set it in your own terminal (Terminal.app: Profiles → Keyboard → Use Option as Meta) |
 | wrong colours inside tmux | the outer terminal must advertise truecolor; check `tmux info \| grep Tc` and that `TERM` outside tmux is `xterm-256color` or `xterm-ghostty` |
 | slow shell start | `zinit times` shows plugin load times; `zsh -xv 2>&1 \| ts` finds a slow line in `~/.zshrc.local` |
 | `compinit: insecure directories` | a completion dir is group/world-writable; `compaudit` lists them, `chmod g-w,o-w <dir>` fixes them. The shell already skips them (`-i`) |

@@ -15,6 +15,7 @@ cfg="${XDG_CONFIG_HOME:-$HOME/.config}"
 
 for p in \
   "$HOME/.zshrc" \
+  "$cfg/zsh/.zshrc" \
   "$cfg/starship.toml" \
   "$cfg/tmux/tmux.conf" \
   "$HOME/.local/bin/tmux-sessionizer" \
