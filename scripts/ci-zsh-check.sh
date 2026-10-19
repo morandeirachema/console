@@ -15,9 +15,19 @@ zsh -ic '
     echo "zsh OK (offline: plain compinit path, no plugins)"; exit 0
   fi
   [[ -r "$zinit_home/zinit.zsh" ]] || { echo "::error::zinit not cloned"; exit 1; }
-  @zinit-scheduler burst >/dev/null 2>&1 || true   # run the turbo waves now instead of after the first prompt
+  # run the turbo waves now instead of after the first prompt; on a fresh box the plugins are
+  # cloned during this step, so give the scheduler a few rounds before judging
+  for i in {1..10}; do
+    @zinit-scheduler burst >/dev/null 2>&1 || true
+    (( ${+widgets[fzf-tab-complete]} && ${+widgets[history-substring-search-up]} && ${+widgets[autosuggest-accept]} )) && break
+    sleep 1
+  done
   for w in fzf-tab-complete history-substring-search-up autosuggest-accept; do
-    (( ${+widgets[$w]} )) || { echo "::error::widget $w missing — its plugin did not load"; exit 1; }
+    if (( ! ${+widgets[$w]} )); then
+      echo "::error::widget $w missing — its plugin did not load"
+      echo "--- diagnostics ---"; zinit list 2>&1 | head -20; ls -1 "${zinit_home:h}/plugins" 2>&1
+      echo "widgets: ${(k)widgets[(I)*fzf*|*autosuggest*|*substring*]}"; exit 1
+    fi
   done
   for t in starship zoxide fzf; do command -v "$t" >/dev/null || { echo "::error::$t missing"; exit 1; }; done
   bindkey | grep -q "\"^T\" fzf-file-widget"  || { echo "::error::Ctrl-T is not fzf-file-widget"; exit 1; }

@@ -593,7 +593,9 @@ fi
 
 # --- fd (find) — Debian/Ubuntu package is 'fd-find', binary 'fdfind' ---
 if ! have fd && ! have fdfind; then
-  info "Installing fd…"; pkg_install fd-find || pkg_install fd || warn "fd failed"
+  info "Installing fd…"
+  if [ "$PM" = brew ]; then pkg_install fd || warn "fd failed"
+  else pkg_install fd-find || pkg_install fd || warn "fd failed"; fi
 fi
 
 # --- ripgrep (rg) — fast grep ---
