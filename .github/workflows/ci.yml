@@ -55,7 +55,9 @@ jobs:
           h="$(mktemp -d)"
           HOME="$h" ./install.sh --dry-run -y --no-chsh >/dev/null
           # an empty HOME has nothing linked, so --doctor must report problems (exit 1), not crash
-          HOME="$h" ./install.sh --doctor >/dev/null; rc=$?; [ "$rc" -eq 1 ] || { echo "doctor exit $rc, expected 1"; exit 1; }
+          # (captured with && / || because the step runs under bash -e, where a bare exit 1 would abort it)
+          HOME="$h" ./install.sh --doctor >/dev/null && rc=0 || rc=$?
+          [ "$rc" -eq 1 ] || { echo "doctor exit $rc, expected 1"; exit 1; }
           HOME="$h" ./uninstall.sh --dry-run >/dev/null
           n="$(find "$h" -mindepth 1 | wc -l)"
           [ "$n" -eq 0 ] || { echo "::error::--dry-run/--doctor wrote $n entries to \$HOME"; find "$h" -mindepth 1; exit 1; }
@@ -156,7 +158,9 @@ jobs:
           h="$(mktemp -d)"
           HOME="$h" ./install.sh --dry-run -y --no-chsh >/dev/null
           # an empty HOME has nothing linked, so --doctor must report problems (exit 1), not crash
-          HOME="$h" ./install.sh --doctor >/dev/null; rc=$?; [ "$rc" -eq 1 ] || { echo "doctor exit $rc, expected 1"; exit 1; }
+          # (captured with && / || because the step runs under bash -e, where a bare exit 1 would abort it)
+          HOME="$h" ./install.sh --doctor >/dev/null && rc=0 || rc=$?
+          [ "$rc" -eq 1 ] || { echo "doctor exit $rc, expected 1"; exit 1; }
           HOME="$h" ./uninstall.sh --dry-run >/dev/null
           n="$(find "$h" -mindepth 1 | wc -l | tr -d ' ')"
           [ "$n" -eq 0 ] || { echo "::error::--dry-run/--doctor wrote $n entries to \$HOME"; find "$h" -mindepth 1; exit 1; }
