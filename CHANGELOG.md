@@ -22,6 +22,8 @@ they landed on `main`. Newest first.
   install idempotent, `--doctor` clean after install, tmux/sesh-picker wired, uninstall twice, delta
   include removed, README restore recipe); an `--xdg` leg; a truly offline leg (all connections
   refused); an openSUSE/zypper leg; checkouts pinned by SHA with `persist-credentials: false`.
+- `--doctor` reports links that `--minimal`, `--server`, `--no-nvim`, `--no-ghostty`, `--no-alacritty` or `--no-kitty`
+  legitimately skip as optional, so a trimmed install can still come out clean (CI asserts this after every install).
 - `./uninstall.sh --dry-run` previews the undo. `./install.sh --doctor` now exits 1 when something needs
   fixing (and treats font/nvim/fabric as optional under `--no-font`/`--no-nvim`/`--no-fabric`), so CI and
   scripts can assert on it; CI checks that an empty HOME yields exit 1.
