@@ -13,6 +13,9 @@ they landed on `main`. Newest first.
   "console (WSL)" profile using the Nerd Font. WSL-only `open`, `pbcopy`, `pbpaste` and `winhome` helpers.
   README and MANUAL gained a Windows section.
 - `Ctrl-→` / `Ctrl-←` move by word (and accept one word of an autosuggestion); `Alt-F`/`Alt-B` already did.
+- fzf older than 0.48 (Debian/Ubuntu's package) is replaced by a checksum-verified GitHub release on Linux:
+  without `fzf --zsh`, minimal and container images that strip `/usr/share/doc` left `Ctrl-T`/`Alt-C` unbound.
+- Older atuin builds that reject `--disable-ai` (Fedora's 18.12) fall back to a plain init instead of losing `Ctrl-R`.
 - CI now proves more: an offline unit test that every release helper refuses a bad checksum
   (`scripts/ci-checksum-check.sh`); a real interactive-zsh check (zinit cloned, turbo plugins loaded,
   `Ctrl-T`/`Tab`/`Ctrl-R` bound, starship renders) replacing `zsh -ic exit`; a lifecycle check (second

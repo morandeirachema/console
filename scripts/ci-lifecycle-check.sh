@@ -23,7 +23,7 @@ if [ -e "$newest/.zshrc" ] || [ -L "$newest/.zshrc" ]; then bad "second run re-b
 else ok "second run backed up nothing it had already linked"; fi
 # --doctor is clean right after an install with the same flags
 if ./install.sh --doctor "${flags[@]}" >/dev/null 2>&1; then ok "--doctor exits 0 after install"
-else bad "--doctor reports problems after install:"; ./install.sh --doctor "${flags[@]}" 2>/dev/null | grep -E "^\s+(!|✗)" | sed 's/^/      /'; fi
+else bad "--doctor reports problems after install:"; ./install.sh --doctor "${flags[@]}" 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' | grep -E "^\s+(!|✗)" | sed 's/^/      /'; fi
 
 # --- tmux config loads and prefix+f is wired to the picker ---
 if command -v tmux >/dev/null; then

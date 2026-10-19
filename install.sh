@@ -236,6 +236,46 @@ install_superfile_release() { # https://github.com/yorukot/superfile/releases
   rm -rf "$tmp"
 }
 
+install_fzf_release() {       # https://github.com/junegunn/fzf/releases
+  local arch tmp ver want got asset
+  dry && { info "[dry-run] download + install fzf (GitHub release)"; return 0; }
+  case "$(uname -m)" in
+    x86_64)  arch="linux_amd64" ;;
+    aarch64) arch="linux_arm64" ;;
+    *) return 1 ;;
+  esac
+  tmp="$(mktemp -d)"
+  ver="$(gh_curl https://api.github.com/repos/junegunn/fzf/releases/latest \
+         | sed -n 's/.*"tag_name": *"v\([^"]*\)".*/\1/p' | head -1)"
+  [ -n "$ver" ] || { rm -rf "$tmp"; return 1; }
+  asset="fzf-${ver}-${arch}.tar.gz"
+  curl -sSfL -o "$tmp/fzf.tgz" \
+    "https://github.com/junegunn/fzf/releases/download/v${ver}/${asset}" \
+    || { rm -rf "$tmp"; return 1; }
+  if curl -sSfL -o "$tmp/sums" \
+       "https://github.com/junegunn/fzf/releases/download/v${ver}/fzf_${ver}_checksums.txt"; then
+    want="$(grep -F "$asset" "$tmp/sums" | awk '{print $1}' | head -1)"
+    got="$(sha256_of "$tmp/fzf.tgz")"
+    if [ -z "$want" ]; then
+      warn "fzf: asset not listed in the release checksums — refusing to install"; rm -rf "$tmp"; return 1
+    elif [ "$want" != "$got" ]; then
+      warn "fzf checksum mismatch — refusing to install"; rm -rf "$tmp"; return 1
+    fi
+  else
+    warn "could not fetch fzf checksums — refusing to install"; rm -rf "$tmp"; return 1
+  fi
+  tar xzf "$tmp/fzf.tgz" -C "$tmp" fzf || { rm -rf "$tmp"; return 1; }
+  mkdir -p "$HOME/.local/bin"; install "$tmp/fzf" "$HOME/.local/bin/fzf"
+  rm -rf "$tmp"
+}
+# fzf older than 0.48 has no `fzf --zsh`; the shell then needs the distro's key-bindings files,
+# which minimal/cloud/container images strip with /usr/share/doc — so Ctrl-T/Alt-C would be dead.
+fzf_too_old() {
+  local v; v="$(fzf --version 2>/dev/null | awk '{print $1}')"
+  [ -n "$v" ] || return 0
+  [ "$(printf '%s\n0.48.0\n' "$v" | sort -V | head -1)" != "0.48.0" ]
+}
+
 install_carapace_release() {  # https://github.com/carapace-sh/carapace-bin
   local arch tmp ver want got
   dry && { info "[dry-run] download + install carapace (GitHub release)"; return 0; }
@@ -585,6 +625,11 @@ fi
 
 # --- fzf ---
 have fzf || { info "Installing fzf…"; pkg_install fzf || warn "fzf failed"; }
+# Debian/Ubuntu (and older Fedora/RHEL) ship an fzf without `--zsh`: fetch a current release (Linux only)
+if have fzf && fzf_too_old && [ "$PM" != brew ] && [ "$OFFLINE" -eq 0 ]; then
+  info "fzf $(fzf --version | awk '{print $1}') is older than 0.48 (no 'fzf --zsh') — installing a current release into ~/.local/bin…"
+  install_fzf_release || warn "fzf release install failed — Ctrl-T/Alt-C need the distro's key-bindings files"
+fi
 
 # --- bat ---
 if ! have bat && ! have batcat; then

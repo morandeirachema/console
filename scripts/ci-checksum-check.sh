@@ -22,13 +22,13 @@ curl() {
       *api.github.com*) printf '{"tag_name": "v9.9.9", "assets": [{"name": "tree-sitter-linux-x64.gz", "digest": "sha256:%s"}]}' "$BAD";;
       *checksums*|*SHA-256.txt|*.sha256|*.sha256sum)
         for a in lazygit_9.9.9_linux_x86_64.tar.gz sesh_Linux_x86_64.tar.gz superfile-linux-v9.9.9-amd64.tar.gz \
-                 carapace-bin_9.9.9_linux_amd64.tar.gz fabric_Linux_x86_64.tar.gz nvim-linux-x86_64.tar.gz \
+                 carapace-bin_9.9.9_linux_amd64.tar.gz fabric_Linux_x86_64.tar.gz nvim-linux-x86_64.tar.gz fzf-9.9.9-linux_amd64.tar.gz \
                  atuin-x86_64-unknown-linux-gnu.tar.gz JetBrainsMono.zip; do printf '%s  %s\n' "$BAD" "$a"; done;;
       *) printf 'junk';;
     esac
   } | if [ -n "$out" ]; then cat >"$out"; else cat; fi
 }
-for t in lazygit atuin sesh superfile carapace fabric neovim tree_sitter; do
+for t in lazygit atuin sesh superfile carapace fabric neovim tree_sitter fzf; do
   if ! declare -F "install_${t}_release" >/dev/null; then echo "  ✗ install_${t}_release missing"; fail=1; continue; fi
   "install_${t}_release" >/dev/null 2>&1; rc=$?
   if [ "$rc" -eq 1 ] && [ -z "$(ls -A "$HOME/.local/bin" 2>/dev/null)" ]; then echo "  ✓ $t refused the bad checksum"
