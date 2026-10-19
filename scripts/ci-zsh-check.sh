@@ -17,8 +17,9 @@ zsh -ic '
   [[ -r "$zinit_home/zinit.zsh" ]] || { echo "::error::zinit not cloned"; exit 1; }
   # run the turbo waves now instead of after the first prompt; on a fresh box the plugins are
   # cloned during this step, so give the scheduler a few rounds before judging
+  sched_log="$(mktemp)"
   for i in {1..10}; do
-    @zinit-scheduler burst >/dev/null 2>&1 || true
+    @zinit-scheduler burst >>"$sched_log" 2>&1 || true
     (( ${+widgets[fzf-tab-complete]} && ${+widgets[history-substring-search-up]} && ${+widgets[autosuggest-accept]} )) && break
     sleep 1
   done
@@ -26,7 +27,8 @@ zsh -ic '
     if (( ! ${+widgets[$w]} )); then
       echo "::error::widget $w missing — its plugin did not load"
       echo "--- diagnostics ---"; zinit list 2>&1 | head -20; ls -1 "${zinit_home:h}/plugins" 2>&1
-      echo "widgets: ${(k)widgets[(I)*fzf*|*autosuggest*|*substring*]}"; exit 1
+      echo "widgets: ${(k)widgets[(I)*fzf*|*autosuggest*|*substring*]}"
+      echo "--- scheduler output ---"; sed "s/\x1b\[[0-9;?]*[A-Za-z]//g" "$sched_log" | grep -v "^\s*$" | tail -40; exit 1
     fi
   done
   for t in starship zoxide fzf; do command -v "$t" >/dev/null || { echo "::error::$t missing"; exit 1; }; done
