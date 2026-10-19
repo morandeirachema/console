@@ -21,7 +21,7 @@ curl() {
     case "$url" in
       *api.github.com*) printf '{"tag_name": "v9.9.9", "assets": [{"name": "tree-sitter-linux-x64.gz", "digest": "sha256:%s"}]}' "$BAD";;
       *checksums*|*SHA-256.txt|*.sha256|*.sha256sum)
-        for a in lazygit_9.9.9_Linux_x86_64.tar.gz sesh_Linux_x86_64.tar.gz superfile-linux-v9.9.9-amd64.tar.gz \
+        for a in lazygit_9.9.9_linux_x86_64.tar.gz sesh_Linux_x86_64.tar.gz superfile-linux-v9.9.9-amd64.tar.gz \
                  carapace-bin_9.9.9_linux_amd64.tar.gz fabric_Linux_x86_64.tar.gz nvim-linux-x86_64.tar.gz \
                  atuin-x86_64-unknown-linux-gnu.tar.gz JetBrainsMono.zip; do printf '%s  %s\n' "$BAD" "$a"; done;;
       *) printf 'junk';;

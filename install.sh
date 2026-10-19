@@ -105,8 +105,8 @@ install_lazygit_release() {   # https://github.com/jesseduffield/lazygit
   local arch tmp ver want got
   dry && { info "[dry-run] download + install lazygit (GitHub release)"; return 0; }
   case "$(uname -m)" in
-    x86_64)  arch="Linux_x86_64" ;;
-    aarch64) arch="Linux_arm64" ;;
+    x86_64)  arch="linux_x86_64" ;;   # assets were renamed to lowercase in 2026 (checksums.txt always was)
+    aarch64) arch="linux_arm64" ;;
     *) return 1 ;;
   esac
   tmp="$(mktemp -d)"
@@ -119,7 +119,7 @@ install_lazygit_release() {   # https://github.com/jesseduffield/lazygit
   # verify SHA256 against the release's published checksums.txt before trusting it
   if curl -sSfL -o "$tmp/sums" \
        "https://github.com/jesseduffield/lazygit/releases/download/v${ver}/checksums.txt"; then
-    want="$(grep -E "  lazygit_${ver}_${arch}\.tar\.gz$" "$tmp/sums" | awk '{print $1}' | head -1)"
+    want="$(grep -iE "  lazygit_${ver}_${arch}\.tar\.gz$" "$tmp/sums" | awk '{print $1}' | head -1)"
     got="$(sha256_of "$tmp/lg.tgz")"
     if [ -z "$want" ]; then
       warn "lazygit: asset not listed in the release checksums — refusing to install"; rm -rf "$tmp"; return 1
@@ -753,6 +753,7 @@ if ! have starship; then
       warn "offline: install starship from your mirror"
     else
       warn "starship not packaged here — using the official installer (curl | sh)"
+      mkdir -p "$HOME/.local/bin"   # the installer refuses a --bin-dir that does not exist yet
       curl -fsSL https://starship.rs/install.sh | sh -s -- -y -b "$HOME/.local/bin" \
         || warn "starship install failed"
     fi
