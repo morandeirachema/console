@@ -106,9 +106,10 @@ jobs:
             zshrc: /root/.config/zsh/.zshrc
             # --xdg must add exactly one ZDOTDIR line, stay idempotent, and be fully reversible
             post: |
-              [ "$(grep -c 'export ZDOTDIR=' "$HOME/.zshenv")" -eq 1 ] || { echo "::error::ZDOTDIR line count"; exit 1; }
+              # (no single quotes in here — this text is spliced into a single-quoted `bash -ec` string)
+              [ "$(grep -c "export ZDOTDIR=" "$HOME/.zshenv")" -eq 1 ] || { echo "::error::ZDOTDIR line count"; exit 1; }
               ./install.sh --minimal --xdg --no-chsh -y >/dev/null
-              [ "$(grep -c 'export ZDOTDIR=' "$HOME/.zshenv")" -eq 1 ] || { echo "::error::ZDOTDIR duplicated on re-run"; exit 1; }
+              [ "$(grep -c "export ZDOTDIR=" "$HOME/.zshenv")" -eq 1 ] || { echo "::error::ZDOTDIR duplicated on re-run"; exit 1; }
               ./uninstall.sh >/dev/null
               ! grep -q ZDOTDIR "$HOME/.zshenv" || { echo "::error::uninstall left the ZDOTDIR line"; exit 1; }
               ! test -e "$HOME/.config/zsh/.zshrc" || { echo "::error::uninstall left the --xdg .zshrc"; exit 1; }

@@ -533,6 +533,8 @@ doctor() {
   for t in fzf zoxide eza rg delta lazygit atuin sesh spf jq yq direnv carapace tmux pass fabric; do
     if have "$t"; then dg "$t"
     elif [ "$t" = fabric ] && [ "$NO_FABRIC" -eq 1 ]; then do_ "fabric not installed (optional: --no-fabric)"
+    elif [ "$MINIMAL" -eq 1 ] && ! case "$t" in fzf|zoxide|rg) false ;; *) true ;; esac; then dn "$t missing"
+    elif [ "$MINIMAL" -eq 1 ]; then do_ "$t not installed (optional: --minimal)"
     else dn "$t missing"; fi
   done
   # Debian/Ubuntu ship bat as `batcat` and fd as `fdfind`; count either as present.
@@ -555,21 +557,25 @@ doctor() {
   have kitty && dg "kitty" || do_ "kitty not installed (optional; config still linked if you use it)"
 
   dh "Symlinks → repo"
+  # a link that the given flags legitimately skip is reported as optional, not as a problem,
+  # so `--doctor --minimal` / `--doctor --server` / `--doctor --no-nvim` can come out clean
+  dlink_opt() { local skip="$1" why="$2"; shift 2
+    if [ "$skip" -ne 0 ]; then do_ "${1/#"$HOME"/\~} not linked (optional: $why)"; else dlink "$@"; fi; }
   if [ -L "$cfg/zsh/.zshrc" ]; then dlink "$cfg/zsh/.zshrc" "zsh/.zshrc"   # --xdg layout
   else dlink "$HOME/.zshrc" "zsh/.zshrc"; fi
   dlink "$cfg/starship.toml"                "starship/starship.toml"
-  dlink "$cfg/tmux/tmux.conf"               "tmux/tmux.conf"
-  dlink "$HOME/.local/bin/tmux-sessionizer" "scripts/tmux-sessionizer.sh"
-  dlink "$HOME/.local/bin/nas-sync"         "scripts/nas-sync.sh"
-  dlink "$cfg/ghostty/config"               "ghostty/config"
-  dlink "$cfg/atuin/config.toml"            "atuin/config.toml"
-  dlink "$cfg/sesh/sesh.toml"               "sesh/sesh.toml"
-  dlink "$(spf_cfg_dir)/config.toml"        "superfile/config.toml"
-  dlink "$HOME/.local/bin/sesh-picker"      "scripts/sesh-picker.sh"
-  dlink "$cfg/alacritty/alacritty.toml"     "alacritty/alacritty.toml"
-  dlink "$cfg/kitty/kitty.conf"             "kitty/kitty.conf"
-  dlink "$cfg/lazygit/config.yml"           "lazygit/config.yml"
-  dlink "$cfg/nvim"                         "nvim"
+  dlink_opt "$MINIMAL" "--minimal" "$cfg/tmux/tmux.conf"               "tmux/tmux.conf"
+  dlink_opt "$MINIMAL" "--minimal" "$HOME/.local/bin/tmux-sessionizer" "scripts/tmux-sessionizer.sh"
+  dlink_opt "$MINIMAL" "--minimal" "$HOME/.local/bin/nas-sync"         "scripts/nas-sync.sh"
+  dlink_opt $(( MINIMAL | NO_GHOSTTY ))   "--no-ghostty / --server"   "$cfg/ghostty/config"           "ghostty/config"
+  dlink_opt "$MINIMAL" "--minimal" "$cfg/atuin/config.toml"            "atuin/config.toml"
+  dlink_opt "$MINIMAL" "--minimal" "$cfg/sesh/sesh.toml"               "sesh/sesh.toml"
+  dlink_opt "$MINIMAL" "--minimal" "$(spf_cfg_dir)/config.toml"        "superfile/config.toml"
+  dlink_opt "$MINIMAL" "--minimal" "$HOME/.local/bin/sesh-picker"      "scripts/sesh-picker.sh"
+  dlink_opt $(( MINIMAL | NO_ALACRITTY )) "--no-alacritty / --server" "$cfg/alacritty/alacritty.toml" "alacritty/alacritty.toml"
+  dlink_opt $(( MINIMAL | NO_KITTY ))     "--no-kitty / --server"     "$cfg/kitty/kitty.conf"         "kitty/kitty.conf"
+  dlink_opt "$MINIMAL" "--minimal" "$cfg/lazygit/config.yml"           "lazygit/config.yml"
+  dlink_opt $(( MINIMAL | NO_NVIM ))      "--no-nvim"                 "$cfg/nvim"                     "nvim"
 
   dh "Font & git"
   [ "$IS_WSL" -eq 1 ] && do_ "WSL: the Nerd Font must be installed on Windows (winget install DEVCOM.JetBrainsMonoNerdFont) and set in Windows Terminal"
