@@ -15,13 +15,14 @@ zsh -ic '
     echo "zsh OK (offline: plain compinit path, no plugins)"; exit 0
   fi
   [[ -r "$zinit_home/zinit.zsh" ]] || { echo "::error::zinit not cloned"; exit 1; }
-  # run the turbo waves now instead of after the first prompt; on a fresh box the plugins are
-  # cloned during this step, so give the scheduler a few rounds before judging
+  # run the turbo waves now instead of after the first prompt. On a fresh box zinit clones the
+  # plugins in background processes and loads each one on a LATER scheduler tick, and CI runners
+  # are slow, so keep ticking for up to ~2 minutes and stop as soon as the widgets exist.
   sched_log="$(mktemp)"
-  for i in {1..10}; do
+  for i in {1..60}; do
     @zinit-scheduler burst >>"$sched_log" 2>&1 || true
-    (( ${+widgets[fzf-tab-complete]} && ${+widgets[history-substring-search-up]} && ${+widgets[autosuggest-accept]} )) && break
-    sleep 1
+    (( ${+widgets[fzf-tab-complete]} && ${+widgets[history-substring-search-up]} && ${+widgets[autosuggest-accept]} )) && { echo "turbo plugins loaded after ~$(( i * 2 ))s"; break; }
+    sleep 2
   done
   for w in fzf-tab-complete history-substring-search-up autosuggest-accept; do
     if (( ! ${+widgets[$w]} )); then
