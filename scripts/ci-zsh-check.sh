@@ -9,7 +9,8 @@ set -uo pipefail
 mode="${1:-}"
 # CI steps run without TERM; zle cannot start without one, and zinit notices its background plugin
 # installs through zle, so the turbo waves would never load (reproduced locally with `env -u TERM`).
-export TERM="${TERM:-xterm-256color}"
+# (bash itself sets TERM=dumb when it starts without one, so treat dumb as unset)
+case "${TERM:-}" in ""|dumb) export TERM=xterm-256color ;; esac
 zsh -ic '
   zinit_home="${XDG_DATA_HOME:-$HOME/.local/share}/zinit/zinit.git"
   if [[ "$1" == --offline ]]; then
@@ -31,7 +32,7 @@ zsh -ic '
     if (( ! ${+widgets[$w]} )); then
       echo "::error::widget $w missing — its plugin did not load"
       echo "--- diagnostics ---"; zinit list 2>&1 | head -20; ls -1 "${zinit_home:h}/plugins" 2>&1
-      echo "widgets: ${(k)widgets[(I)*fzf*|*autosuggest*|*substring*]}"
+      echo "TERM=$TERM  widgets: ${(k)widgets[(I)*fzf*|*autosuggest*|*substring*]}"
       echo "--- scheduler output ---"; sed "s/\x1b\[[0-9;?]*[A-Za-z]//g" "$sched_log" | grep -v "^\s*$" | tail -40; exit 1
     fi
   done
