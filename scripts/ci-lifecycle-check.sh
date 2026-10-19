@@ -16,10 +16,14 @@ bad() { printf '  \xe2\x9c\x97 %s\n' "$1"; fail=1; }
 ./install.sh "${flags[@]}" >/dev/null 2>&1 || bad "second install run failed"
 n="$(git config --global --get-all include.path 2>/dev/null | grep -c delta.gitconfig)"
 [ "$n" -eq 1 ] && ok "git-delta include present exactly once after two runs" || bad "git-delta include count is $n"
-b="$(ls -1 "$HOME/backup/zsh" 2>/dev/null | wc -l | tr -d ' ')"
-[ "$b" -eq 1 ] && ok "one backup after two runs (second run replaced nothing)" || bad "backup dirs after two runs: $b"
+# every run snapshots ~/.gitconfig and ~/.zshenv (the files it edits), so a second backup dir is
+# expected — but it must not contain a config the first run already turned into a symlink
+newest="$(ls -1dt "$HOME"/backup/zsh/*/ 2>/dev/null | head -1)"
+if [ -e "$newest/.zshrc" ] || [ -L "$newest/.zshrc" ]; then bad "second run re-backed-up ~/.zshrc (it should be our symlink by then)"
+else ok "second run backed up nothing it had already linked"; fi
 # --doctor is clean right after an install with the same flags
-./install.sh --doctor "${flags[@]}" >/dev/null 2>&1 && ok "--doctor exits 0 after install" || bad "--doctor reports problems after install"
+if ./install.sh --doctor "${flags[@]}" >/dev/null 2>&1; then ok "--doctor exits 0 after install"
+else bad "--doctor reports problems after install:"; ./install.sh --doctor "${flags[@]}" 2>/dev/null | grep -E "^\s+(!|✗)" | sed 's/^/      /'; fi
 
 # --- tmux config loads and prefix+f is wired to the picker ---
 if command -v tmux >/dev/null; then
@@ -38,8 +42,10 @@ else bad "tmux missing"; fi
 git config --global --get-all include.path 2>/dev/null | grep -q delta.gitconfig && bad "git-delta include still present" || ok "git-delta include removed"
 bash scripts/ci-uninstall-check.sh "$name" >/dev/null || bad "ci-uninstall-check failed after uninstall"
 
-# --- README restore recipe: newest backup copied back over the now-empty paths ---
-latest="$(ls -1dt "$HOME"/backup/zsh/*/ 2>/dev/null | head -1)"
+# --- README restore recipe: the newest backup that holds a .zshrc, copied back over the now-empty paths ---
+latest=""
+dirs=("$HOME"/backup/zsh/*/)          # names are timestamps, so lexical order is chronological
+for (( i=${#dirs[@]}-1; i>=0; i-- )); do [ -e "${dirs[$i]}/.zshrc" ] && { latest="${dirs[$i]}"; break; }; done
 if [ -n "$latest" ] && cp -a "$latest/." "$HOME"/ && grep -q PRE-INSTALL-MARKER "$HOME/.zshrc" 2>/dev/null; then
   ok "restore recipe brings the pre-install ~/.zshrc back"
 else bad "restore recipe failed (backup: ${latest:-none})"; fi

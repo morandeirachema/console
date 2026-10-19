@@ -37,12 +37,18 @@ zsh -ic '
     fi
   done
   for t in starship zoxide fzf; do command -v "$t" >/dev/null || { echo "::error::$t missing"; exit 1; }; done
-  bindkey | grep -q "\"^T\" fzf-file-widget"  || { echo "::error::Ctrl-T is not fzf-file-widget"; exit 1; }
-  bindkey | grep -q "\"^I\" fzf-tab-complete" || { echo "::error::Tab is not fzf-tab-complete"; exit 1; }
+  bind_fail() {
+    echo "::error::$1"; echo "--- binding diagnostics ---"
+    echo "fzf: $(fzf --version 2>&1 | head -1)   atuin: $(atuin --version 2>&1 | head -1)"
+    bindkey | grep -E "^\"\^(T|R|I)\"|\^\[c" ; echo "widgets: ${(k)widgets[(I)fzf*|atuin*]}"
+    ls /usr/share/doc/fzf/examples /usr/share/fzf /usr/share/fzf/shell 2>&1 | head -12; exit 1
+  }
+  bindkey | grep -q "\"^T\" fzf-file-widget"  || bind_fail "Ctrl-T is not fzf-file-widget"
+  bindkey | grep -q "\"^I\" fzf-tab-complete" || bind_fail "Tab is not fzf-tab-complete"
   if command -v atuin >/dev/null; then
-    bindkey | grep -q "\"^R\" atuin-search" || { echo "::error::Ctrl-R is not atuin-search"; exit 1; }
+    bindkey | grep -q "\"^R\" atuin-search" || bind_fail "Ctrl-R is not atuin-search"
   else
-    bindkey | grep -q "\"^R\" fzf-history-widget" || { echo "::error::Ctrl-R is not fzf (no atuin)"; exit 1; }
+    bindkey | grep -q "\"^R\" fzf-history-widget" || bind_fail "Ctrl-R is not fzf (no atuin)"
   fi
   starship prompt >/dev/null || { echo "::error::starship cannot render the prompt"; exit 1; }
   echo "zsh OK: zinit + turbo plugins + bindings + starship"

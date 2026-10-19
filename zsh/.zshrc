@@ -152,8 +152,13 @@ fi
 #  Config: atuin/config.toml (no network at startup; sync is opt-in).
 #  https://atuin.sh
 # ------------------------------------------------------------
-#  --disable-ai: atuin ≥18.24 would otherwise bind `?` on an empty line to its hosted-LLM feature.
-command -v atuin >/dev/null && eval "$(atuin init zsh --disable-up-arrow --disable-ai)"
+#  --disable-ai: atuin ≥18.24 would otherwise bind `?` on an empty line to its hosted-LLM feature;
+#  older atuin (e.g. Fedora's 18.12) rejects the flag, so fall back to init without it.
+if command -v atuin >/dev/null; then
+  _atuin_init="$(atuin init zsh --disable-up-arrow --disable-ai 2>/dev/null)" \
+    || _atuin_init="$(atuin init zsh --disable-up-arrow 2>/dev/null)"
+  eval "$_atuin_init"; unset _atuin_init
+fi
 
 # history-substring-search keys (Up/Down + Ctrl-P/N) are bound in the
 # plugin's atload hook above — in turbo mode the widget only exists
