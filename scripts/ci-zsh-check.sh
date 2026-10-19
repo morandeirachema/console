@@ -7,6 +7,9 @@
 #   --offline: zinit cannot clone, so only the `compinit -i` fallback path is asserted.
 set -uo pipefail
 mode="${1:-}"
+# CI steps run without TERM; zle cannot start without one, and zinit notices its background plugin
+# installs through zle, so the turbo waves would never load (reproduced locally with `env -u TERM`).
+export TERM="${TERM:-xterm-256color}"
 zsh -ic '
   zinit_home="${XDG_DATA_HOME:-$HOME/.local/share}/zinit/zinit.git"
   if [[ "$1" == --offline ]]; then
