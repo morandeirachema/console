@@ -954,10 +954,15 @@ link "$REPO_DIR/starship/starship.toml"  "$CFG/starship.toml"
 if [ "$MINIMAL" -eq 0 ]; then
   link "$REPO_DIR/atuin/config.toml" "$CFG/atuin/config.toml"
   if have atuin && [ ! -s "${XDG_DATA_HOME:-$HOME/.local/share}/atuin/history.db" ]; then
-    info "Importing existing shell history into atuin (one time)…"
-    src=auto; [ -f "$HOME/.zsh_history" ] && src=zsh
-    if dry; then run atuin import "$src"
+    # a fresh box has no shell history at all — nothing to import is not a failed import
+    src=""
+    if [ -f "$HOME/.zsh_history" ]; then src=zsh
+    elif [ -f "$HOME/.bash_history" ] || [ -f "${XDG_DATA_HOME:-$HOME/.local/share}/fish/fish_history" ]; then src=auto
+    fi
+    if [ -z "$src" ]; then :
+    elif dry; then run atuin import "$src"
     else
+      info "Importing existing shell history into atuin (one time)…"
       # imported lines bypass record-time filters — prune them with the same secrets/leading-space rules
       { atuin import "$src" && atuin history prune; } >/dev/null 2>&1 || warn "atuin import failed — run: atuin import $src"
     fi

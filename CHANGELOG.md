@@ -24,6 +24,10 @@ they landed on `main`. Newest first.
 
 - The Ghostty step is judged by its result, not by the exit status alone: if the install command
   reports success and Ghostty is still missing, install.sh says so and points at the audit log.
+- A fresh machine with no shell history no longer gets an "atuin import failed" warning: with nothing
+  to import the step is skipped (the new recap made the false alarm obvious on CI's macOS runner).
+- CI: the Arch jobs prepare the container with `pacman -Syu`; `-Sy` alone is a partial upgrade and
+  stopped resolving when Arch moved to OpenSSL 4.
 
 ## 2026-10-19
 
