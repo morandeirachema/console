@@ -91,7 +91,7 @@ jobs:
             zshrc: /root/.zshrc
           - name: arch
             image: archlinux:latest
-            prep: pacman -Sy --noconfirm sudo git curl zsh
+            prep: pacman -Syu --noconfirm sudo git curl zsh   # full upgrade: -Sy alone is a partial upgrade and breaks when the image lags the repos
             args: --minimal --no-chsh -y
             zshrc: /root/.zshrc
           - name: opensuse
@@ -253,7 +253,7 @@ jobs:
             prep: dnf install -y sudo git curl zsh
           - name: arch
             image: archlinux:latest
-            prep: pacman -Sy --noconfirm sudo git curl zsh
+            prep: pacman -Syu --noconfirm sudo git curl zsh   # full upgrade: -Sy alone is a partial upgrade and breaks when the image lags the repos
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
