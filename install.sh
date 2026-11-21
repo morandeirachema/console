@@ -63,11 +63,23 @@ c()    { printf '\033[%sm' "$1"; }
 log()  { [ "$DRY" -eq 1 ] && return 0; printf '%s %s\n' "$STAMP" "$*" >> "$LOGFILE" 2>/dev/null || true; }
 info() { printf '%s▶%s %s\n' "$(c '1;36')" "$(c 0)" "$*"; log ">  $*"; }
 ok()   { printf '%s✓%s %s\n' "$(c '1;32')" "$(c 0)" "$*"; log "OK $*"; }
-warn() { printf '%s!%s %s\n' "$(c '1;33')" "$(c 0)" "$*"; log "!! $*"; }
+WARNED=""   # every warning of this run — replayed as a recap at the end, because they scroll past
+warn() { printf '%s!%s %s\n' "$(c '1;33')" "$(c 0)" "$*"; log "!! $*"; WARNED="${WARNED}${*}"$'\n'; }
 have() { command -v "$1" >/dev/null 2>&1; }
 dry()  { [ "$DRY" -eq 1 ]; }                     # true in --dry-run
+# Run a command with its output copied into the audit log and its exit status recorded there.
+# The log used to hold step titles only, so a package step that "ran" but left nothing behind
+# could not be diagnosed afterwards. Without a writable log the command just runs.
+logged() {
+  local rc=0
+  [ -w "$LOGFILE" ] || { "$@"; return; }
+  log "\$  $*"
+  "$@" 2>&1 | tee -a "$LOGFILE" || rc="${PIPESTATUS[0]}"
+  log "   exit $rc"
+  return "$rc"
+}
 # run a mutating command, or (in dry-run) just print what it would do
-run()  { if dry; then info "[dry-run] $*"; else "$@"; fi; }
+run()  { if dry; then info "[dry-run] $*"; else logged "$@"; fi; }
 # Ghostty's macOS cask ships an app bundle and (depending on the cask version) no PATH symlink —
 # treat the bundle as installed so --doctor and the install step don't fetch it twice.
 have_ghostty() { have ghostty || [ -d "/Applications/Ghostty.app" ] || [ -d "$HOME/Applications/Ghostty.app" ]; }
@@ -447,11 +459,11 @@ pkg_install() {
   dry && { info "[dry-run] install package(s): $*"; return 0; }
   # shellcheck disable=SC2086  # $SUDO is intentionally empty (root/brew) → word-split
   case "$PM" in
-    brew)   brew install "$@";;
-    apt)    $SUDO apt-get install -y "$@";;
-    dnf)    $SUDO dnf install -y "$@";;
-    pacman) $SUDO pacman -Syu --needed --noconfirm "$@";;
-    zypper) $SUDO zypper install -y "$@";;
+    brew)   logged brew install "$@";;
+    apt)    logged $SUDO apt-get install -y "$@";;
+    dnf)    logged $SUDO dnf install -y "$@";;
+    pacman) logged $SUDO pacman -Syu --needed --noconfirm "$@";;
+    zypper) logged $SUDO zypper install -y "$@";;
     *) return 1;;
   esac
 }
@@ -611,6 +623,13 @@ if [ "$DOCTOR" -eq 1 ]; then set +e; doctor; exit $?; fi
 info "Repo:            $REPO_DIR"
 [ "$IS_WSL" -eq 1 ] && info "WSL detected:    Nerd Font + terminal live on Windows — see README › Windows (WSL)"
 info "Package manager: ${PM:-none detected}"
+if [ -z "$PM" ]; then
+  if [ "$(uname -s)" = Darwin ]; then
+    warn "Homebrew not found — no package will be installed, configs are only linked. Install https://brew.sh and re-run."
+  else
+    warn "no supported package manager (apt/dnf/pacman/zypper/brew) — no package will be installed, configs are only linked."
+  fi
+fi
 [ "$OFFLINE" -eq 1 ] && info "Offline mode: no internet fetches (packages assumed from your mirror)."
 
 # Back up whatever is there BEFORE touching anything (real runs only).
@@ -618,7 +637,7 @@ snapshot
 
 if [ "$PM" = apt ]; then
   # shellcheck disable=SC2086  # $SUDO may be empty
-  if dry; then info "[dry-run] apt-get update"; else $SUDO apt-get update -y || true; fi
+  if dry; then info "[dry-run] apt-get update"; else logged $SUDO apt-get update -y || true; fi
 fi
 
 # --- core ---
@@ -747,10 +766,17 @@ if [ "$MINIMAL" -eq 0 ]; then
   # so the warn fallback points at the download page instead of piping an installer.
   if [ "$NO_GHOSTTY" -eq 0 ] && ! have_ghostty; then
     info "Installing ghostty…"
-    if [ "$PM" = brew ]; then
-      run brew install --cask ghostty || warn "ghostty cask failed — see https://ghostty.org/download"
-    else
-      pkg_install ghostty || warn "ghostty not packaged here — see https://ghostty.org/download"
+    ghostty_rc=0
+    if [ "$PM" = brew ]; then run brew install --cask ghostty || ghostty_rc=$?
+    else pkg_install ghostty || ghostty_rc=$?; fi
+    # Judge the step by its result, not by the exit status alone: a package manager can
+    # report success and still leave no terminal behind.
+    if dry; then :
+    elif have_ghostty; then ok "ghostty installed"
+    elif [ "$ghostty_rc" -eq 0 ]; then
+      warn "ghostty: the install step reported success but Ghostty is not there — see $LOGFILE or https://ghostty.org/download"
+    elif [ "$PM" = brew ]; then warn "ghostty cask failed — see https://ghostty.org/download"
+    else warn "ghostty not packaged here — see https://ghostty.org/download"
     fi
   fi
 fi
@@ -831,7 +857,7 @@ if [ "$NO_FONT" -eq 0 ]; then
   if dry; then info "[dry-run] install JetBrainsMono Nerd Font"
   elif [ "$PM" = brew ]; then
     info "Installing JetBrainsMono Nerd Font (cask)…"
-    brew install --cask font-jetbrains-mono-nerd-font \
+    logged brew install --cask font-jetbrains-mono-nerd-font \
       && ok "Font installed — set your terminal font to 'JetBrainsMono Nerd Font'." \
       || warn "font cask failed; rerun with --no-font to skip"
   elif [ "$(fc-list 2>/dev/null | grep -ci 'JetBrainsMono Nerd Font')" -eq 0 ]; then
@@ -989,6 +1015,12 @@ else
     info "First 'nvim' launch bootstraps LazyVim + its plugins (one-time)."
   [ -d "$BACKUP_DIR" ] && info "Previous config backed up in: $BACKUP_DIR"
   info "Audit log: $LOGFILE"
+fi
+# Warnings are non-fatal and scroll past during a long run — replay them where they get read.
+if [ -n "$WARNED" ]; then
+  echo
+  printf '%s!%s %s step(s) need attention:\n' "$(c '1;33')" "$(c 0)" "$(printf '%s' "$WARNED" | grep -c '')"
+  printf '%s' "$WARNED" | sed 's/^/    - /'
 fi
 
 # Failures above are non-fatal (they only `warn`); exit success so callers/CI

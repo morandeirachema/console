@@ -78,7 +78,8 @@ sh bootstrap.sh         # accepts every install.sh flag, e.g. sh bootstrap.sh --
    That is the only change outside symlinks, and `uninstall.sh` removes it.
 6. Imports your existing zsh history into atuin, once.
 7. Changes your login shell to zsh (skipped if it already is, or with `--no-chsh`).
-8. Writes an audit log to `~/.local/state/console/install-<timestamp>.log`.
+8. Writes an audit log to `~/.local/state/console/install-<timestamp>.log`, including each package
+   command's output and exit code, and ends by listing every warning of the run.
 
 ### 1.3 Every flag
 

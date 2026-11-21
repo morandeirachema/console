@@ -4,6 +4,27 @@ All notable changes to **console**. The format follows [Keep a Changelog](https:
 there are no version numbers because the repo is applied by `git pull`, so entries are grouped by the day
 they landed on `main`. Newest first.
 
+## 2026-11-21
+
+### Added
+
+- The audit log records what the package steps actually did: every package-manager command and brew
+  cask install is written to `~/.local/state/console/install-<ts>.log` with its output and exit code.
+  It used to hold step titles only, so a step that ran but left nothing behind could not be diagnosed.
+- The run ends with a recap of every warning (`N step(s) need attention`); they used to scroll past
+  above a green "Done!".
+- A machine with no package manager (a Mac without Homebrew, say) is told so up front instead of
+  through a string of per-package warnings.
+- CI: a non-minimal macOS job. The existing macOS job runs `--minimal`, which skips the whole extras
+  block, so the Ghostty and Nerd Font casks were never executed. The new job asserts `Ghostty.app`
+  exists after the install and runs the full `ghostty +validate-config`; the extras and uninstall
+  checks know the macOS superfile path.
+
+### Fixed
+
+- The Ghostty step is judged by its result, not by the exit status alone: if the install command
+  reports success and Ghostty is still missing, install.sh says so and points at the audit log.
+
 ## 2026-10-19
 
 ### Added

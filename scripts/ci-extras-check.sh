@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # CI helper — assert the non-minimal "extras" installed correctly.
-# Run inside a distro container from the repo root, AFTER:
+# Run inside a distro container (or on the macOS runner) from the repo root, AFTER:
 #     ./install.sh --no-nvim --no-font --no-chsh -y
 # Usage: scripts/ci-extras-check.sh <distro-name>
 #
@@ -68,7 +68,19 @@ fi
 [ -L "$HOME/.config/ghostty/config" ] && ok "ghostty config symlinked" || bad "ghostty config not symlinked"
 [ -L "$HOME/.config/alacritty/alacritty.toml" ] && ok "alacritty.toml symlinked" || bad "alacritty.toml not symlinked"
 [ -L "$HOME/.config/kitty/kitty.conf" ] && ok "kitty.conf symlinked" || bad "kitty.conf not symlinked"
-command -v ghostty >/dev/null && ok "ghostty installed" || note "ghostty binary not installed (no package on this distro?) — non-fatal"
+if [ "$(uname -s)" = Darwin ]; then
+  # macOS has an official cask, so the install is a hard check there. The cask ships an app bundle
+  # (no PATH symlink); its bundled CLI gives the config the full validation the lint job cannot do.
+  gbin="/Applications/Ghostty.app/Contents/MacOS/ghostty"
+  if [ -x "$gbin" ]; then
+    ok "Ghostty.app installed"
+    "$gbin" +validate-config --config-file=ghostty/config && ok "ghostty/config validates" || bad "ghostty +validate-config rejected ghostty/config"
+  else
+    bad "Ghostty.app missing after install"
+  fi
+else
+  command -v ghostty >/dev/null && ok "ghostty installed" || note "ghostty binary not installed (no package on this distro?) — non-fatal"
+fi
 
 # --- atuin: config symlinked (hard); binary via package or verified release (hard) ---
 [ -L "$HOME/.config/atuin/config.toml" ] && ok "atuin config symlinked" || bad "atuin config not symlinked"
@@ -81,7 +93,9 @@ command -v sesh >/dev/null && ok "sesh installed ($(sesh --version 2>/dev/null |
 bash -n "$HOME/.local/bin/sesh-picker" && ok "sesh-picker parses" || bad "sesh-picker syntax error"
 
 # --- superfile: config symlinked (hard); binary via package/release (hard) ---
-[ -L "$HOME/.config/superfile/config.toml" ] && ok "superfile config symlinked" || bad "superfile config not symlinked"
+# (superfile reads ~/Library/Application Support on macOS, XDG elsewhere — same rule as install.sh's spf_cfg_dir)
+if [ "$(uname -s)" = Darwin ]; then spf_cfg="$HOME/Library/Application Support/superfile"; else spf_cfg="$HOME/.config/superfile"; fi
+[ -L "$spf_cfg/config.toml" ] && ok "superfile config symlinked" || bad "superfile config not symlinked"
 command -v spf >/dev/null && ok "superfile installed ($(spf --version 2>/dev/null | head -1))" || bad "spf binary missing"
 
 # --- fabric: hard-verify IF present; warn (don't fail) if the fetch was missed ---

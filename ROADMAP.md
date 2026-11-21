@@ -172,6 +172,27 @@ Ideas taken from three Mischa van den Burg videos (see
   — every release binary is now checked.
 - **Older fzf on Fedora/RHEL/Arch** gets its key bindings (distro paths added).
 
+## ✅ Done (install-diagnostics pass, 2026-11)
+
+Started from a Mac where Ghostty had to be installed by hand and the audit log could not say why.
+
+- **The audit log is diagnostic** — package-manager and cask commands are logged with their output
+  and exit code (`logged` in install.sh), not just the step title.
+- **Results are verified** — the Ghostty step checks that the terminal is really there afterwards.
+- **Warnings are replayed at the end** of the run, and a missing package manager is reported up front.
+- **CI runs the non-minimal macOS path** (`macos-extras`): brew casks, `Ghostty.app` as a hard check,
+  full `ghostty +validate-config`.
+
+## Open gaps (found in the 2026-11 audit)
+
+- **Invariants nothing enforces.** CI does not check the starship glyph count, the palette/font parity
+  of the Ghostty/Alacritty/kitty/Windows Terminal presets, atuin's `enter_accept`/`auto_sync`/
+  `update_check`, or Ghostty's `ssh-terminfo`. JSON, YAML and `kitty.conf` have no parse check.
+- **CI coverage.** No scheduled run (upstream drift is only caught on the next push); Neovim is never
+  installed in CI; no arm64 Linux or Debian leg; openSUSE only in the smoke job; WSL untested.
+- **Repo hygiene.** No LICENSE; no tags or releases; no Dependabot for the SHA-pinned action and the
+  pinned markdownlint.
+
 ## Future ideas
 
 - Full byte-reproducible plugin lockfile (see *P1 — last mile*).

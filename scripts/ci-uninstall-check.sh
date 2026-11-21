@@ -12,6 +12,8 @@ fail=0
 ok()  { printf '  \xe2\x9c\x93 %s\n' "$1"; }
 bad() { printf '  \xe2\x9c\x97 %s\n' "$1"; fail=1; }
 cfg="${XDG_CONFIG_HOME:-$HOME/.config}"
+# superfile reads ~/Library/Application Support on macOS, XDG elsewhere (install.sh's spf_cfg_dir)
+if [ "$(uname -s)" = Darwin ]; then spf_cfg="$HOME/Library/Application Support/superfile"; else spf_cfg="$cfg/superfile"; fi
 
 for p in \
   "$HOME/.zshrc" \
@@ -23,7 +25,7 @@ for p in \
   "$cfg/ghostty/config" \
   "$cfg/atuin/config.toml" \
   "$cfg/sesh/sesh.toml" \
-  "$cfg/superfile/config.toml" \
+  "$spf_cfg/config.toml" \
   "$HOME/.local/bin/sesh-picker" \
   "$cfg/alacritty/alacritty.toml" \
   "$cfg/kitty/kitty.conf" \

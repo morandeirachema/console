@@ -174,6 +174,32 @@ jobs:
           bash scripts/ci-zsh-check.sh          || { echo "::error::interactive zsh check failed"; exit 1; }
           echo "smoke OK on macOS"
 
+  # The non-minimal path on macOS: --minimal (above) skips the whole extras block, so the brew
+  # casks (Ghostty, the Nerd Font), the brew formulae and the macOS-only config locations were
+  # never executed by CI. Ghostty.app must exist afterwards — a hard check here, unlike on Linux —
+  # and its bundled CLI runs the full `+validate-config` that the lint job can only approximate.
+  macos-extras:
+    needs: lint
+    runs-on: macos-latest
+    timeout-minutes: 40
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: 1
+      HOMEBREW_NO_INSTALL_CLEANUP: 1
+      GITHUB_TOKEN: ${{ github.token }}   # authenticated API calls → no rate limit
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Extras + uninstall on macOS
+        run: |
+          echo PRE-INSTALL-MARKER > "$HOME/.zshrc"   # exercise the pre-change backup
+          ./install.sh --no-nvim --no-chsh -y
+          echo "--- audit log (command output + exit codes) ---"
+          cat "${XDG_STATE_HOME:-$HOME/.local/state}"/console/install-*.log
+          bash scripts/ci-extras-check.sh macos
+          bash scripts/ci-zsh-check.sh
+          bash scripts/ci-lifecycle-check.sh macos --no-nvim --no-chsh -y
+
   bootstrap:
     needs: lint
     runs-on: ubuntu-latest
